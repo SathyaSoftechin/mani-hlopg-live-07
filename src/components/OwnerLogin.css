@@ -1,0 +1,133 @@
+/* =========================
+   Owner Login Page Styles
+========================= */
+
+.owner-login-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 120px auto 0; /* top gap controlled here */
+  padding: 30px;
+  background: #d3f1fc;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: "Inter", sans-serif;
+  margin-bottom: 30px;
+}
+
+/* Heading */
+.owner-login-container h2 {
+  margin-bottom: 20px;
+  font-size: 22px;
+  color: #333;
+  font-weight: 600;
+}
+
+/* Form */
+.owner-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.owner-login-form input {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+}
+
+.owner-login-form input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 4px rgba(79, 70, 229, 0.4);
+}
+
+/* Forgot Password */
+.forgot-password {
+  font-size: 13px;
+  color: #0877ff;
+  text-align: right;
+  cursor: pointer;
+}
+
+/* Button */
+.owner-login-form button {
+  padding: 12px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Signup link */
+.owner-signup-link {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #555;
+}
+
+.owner-signup-link a {
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Error */
+.error-message {
+  color: red;
+  margin-bottom: 10px;
+}
+@media (max-width: 768px) {
+
+  .owner-login-container {
+    max-width: 80%;
+    margin: 90px 16px 0; /* visible top spacing */
+    padding: 24px 20px;
+    border-radius: 14px;
+    
+  }
+
+  .owner-login-container h2 {
+    font-size: 20px;
+  }
+
+  .owner-login-form input {
+    font-size: 14.5px;
+    padding: 11px;
+  }
+
+  .owner-login-form button {
+    font-size: 15px;
+  }
+
+  .owner-signup-link {
+    font-size: 13px;
+  }
+}
+.password-field {
+  position: relative;
+  width: 100%;
+}
+
+.password-field input {
+  width: 85%;
+  padding-right: 42px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 18px;
+  color: #555;
+}
+
+.password-toggle:hover {
+  color: #000;
+}
