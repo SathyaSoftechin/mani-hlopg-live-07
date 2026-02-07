@@ -43,19 +43,24 @@ function Home() {
   const getFullImageUrl = (imagePath) => {
     if (!imagePath) return defaultPGImg;
 
+    // If already full URL (cloudinary / external)
     if (imagePath.startsWith("http")) {
       return imagePath;
     }
 
+    // Backend URL based on environment
+    const BACKEND_URL =
+      import.meta.env.MODE === "development"
+        ? "http://localhost:8080"
+        : "https://hlopgbackend.in";
+
+    // If imagePath already starts with /uploads
     if (imagePath.startsWith("/uploads")) {
-      return `https://hlopg.com${imagePath}`;
+      return `${BACKEND_URL}${imagePath}`;
     }
 
-    if (imagePath) {
-      return `https://hlopg.com/uploads/${imagePath}`;
-    }
-
-    return defaultPGImg;
+    // Otherwise treat as file name
+    return `${BACKEND_URL}/uploads/${imagePath}`;
   };
 
   /* ---------------- Fetch Hostels ---------------- */
@@ -323,7 +328,7 @@ function Home() {
     try {
       const token = localStorage.getItem("hlopgToken");
       if (!token) {
-        navigate("/RoleSelection"); // ✅ DIRECT ROLE PAGE
+        navigate("/RoleSelection");
         return;
       }
 
@@ -377,7 +382,7 @@ function Home() {
     const token = localStorage.getItem("hlopgToken");
 
     if (!token) {
-      navigate("/RoleSelection"); // ✅ DIRECT ROLE PAGE
+      navigate("/RoleSelection");
     } else {
       navigate(`/hostel/${pg.id}`);
     }
