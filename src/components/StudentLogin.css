@@ -31,6 +31,7 @@
   box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
   text-align: center;
   font-family: "Inter", sans-serif;
+  box-sizing: border-box;
 }
 
 .student-login-container h2 {
@@ -53,8 +54,10 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
+  width: 100%;
 }
 
+/* Input Fields */
 .student-login-form input {
   padding: 12px 14px;
   border: 1px solid #ccc;
@@ -62,7 +65,8 @@
   outline: none;
   font-size: 15px;
   transition: border 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  width: 350px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .student-login-form input:focus {
@@ -70,6 +74,7 @@
   box-shadow: 0 0 6px rgba(79, 70, 229, 0.4);
 }
 
+/* Login Button */
 .student-login-form button {
   padding: 12px;
   background: #4f46e5;
@@ -80,6 +85,7 @@
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.3s ease, transform 0.1s ease;
+  width: 100%;
 }
 
 .student-login-form button:hover {
@@ -125,6 +131,44 @@
 }
 
 /* =========================
+   PASSWORD FIELD FIX
+========================= */
+
+.password-field {
+  position: relative;
+  width: 100%;
+}
+
+.password-field input {
+  width: 100% !important;
+  padding: 12px 45px 12px 14px !important; /* space for eye icon */
+  box-sizing: border-box;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+  font-size: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password:hover {
+  color: #5b5ff8;
+}
+
+.toggle-password svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* =========================
    Tablet (≤ 1024px)
 ========================= */
 @media (max-width: 1024px) {
@@ -137,9 +181,6 @@
   }
 }
 
-/* =========================
-   Mobile & Small Tablets (≤ 768px)
-========================= */
 /* =========================
    MOBILE VIEW (≤ 768px)
 ========================= */
@@ -159,7 +200,7 @@
   }
 
   .student-login-container {
-    width: 85%;
+    width: 90%;
     max-width: 100%;
     padding: 24px 22px;
     border-radius: 14px;
@@ -172,8 +213,8 @@
 
   .student-login-form input {
     font-size: 15px;
-    padding: 11px 15px;
-    width: 290px;
+    padding: 11px 14px;
+    width: 100%;
   }
 
   .student-login-form button {
@@ -185,6 +226,11 @@
   .student-signup-link {
     font-size: 13px;
   }
+
+  .toggle-password {
+    font-size: 15px;
+    right: 12px;
+  }
 }
 
 /* =========================
@@ -192,7 +238,7 @@
 ========================= */
 @media (max-width: 480px) {
   .login img {
-    display: none; /* Hide image on very small screens */
+    display: none;
   }
 
   .login {
@@ -200,6 +246,7 @@
   }
 
   .student-login-container {
+    width: 95%;
     padding: 22px 18px;
   }
 
@@ -222,35 +269,3 @@
     font-size: 12.5px;
   }
 }
-
-.password-field {
-  position: relative;
-}
-
-.password-field input {
-  padding-right: 4px; /* space for eye icon */
-}
-
-.toggle-password {
-  position: absolute;
-  right: 1px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  color: #666;
-  font-size: 16px;
-  z-index: 2;
-}
-
-.toggle-password:hover {
-  color: #5b5ff8;
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  .toggle-password {
-    font-size: 15px;
-    right: 10px;
-  }
-}
-
