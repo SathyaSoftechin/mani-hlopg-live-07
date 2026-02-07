@@ -308,7 +308,6 @@
   padding: 25px 30px;
   border-radius: 10px;
   width: 320px;
-  height: 180px;
   text-align: center;
   position: relative;
   opacity: 0;
@@ -342,9 +341,6 @@
   border-radius: 6px;
   border: none;
   cursor: pointer;
-  height: 50px;
-  margin-top: 40px;
-  width: 100px;
 }
 
 .modal-cancel {
@@ -775,9 +771,6 @@ input.invalid {
   .modal {
     width: 70%;
     padding: 20px;
-  }
-  .modal-cancel,.modal-logout{
-    margin-top: 10px;
   }
 
   /* ===== Liked PG Section ===== */

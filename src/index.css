@@ -17,15 +17,30 @@
   --fs-para: 18px;
 }
 
+/* ✅ GLOBAL MOBILE FIX (IMPORTANT) */
 html, body {
-  font-family: var(--font-primary);
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;   /* 🔥 prevents right-side shifting */
+  font-family: var(--font-primary);
   color: #000;
 }
 
-* {
+/* ✅ BOX MODEL FIX */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   font-family: inherit;
+}
+
+/* ✅ IMAGE SAFETY (prevents overflow) */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* Headings */

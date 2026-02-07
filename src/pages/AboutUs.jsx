@@ -10,7 +10,7 @@ import {
   FaChevronDown,
   FaChevronUp,
 } from "react-icons/fa";
-
+ 
 // Import assets
 import aboutMain from "../assets/main.png"; // main left image
 import icon1 from "../assets/icon1.png";
@@ -19,14 +19,14 @@ import icon3 from "../assets/icon3.png";
 import icon4 from "../assets/icon4.png";
 import missionImg from "../assets/mission.png"; // replace with your image
 import visionImg from "../assets/vision.png";   // replace with your image
-
+ 
 function AboutUs() {
   const [openIndex, setOpenIndex] = useState(null);
-
+ 
   const toggleFAQ = (index) => {
     setOpenIndex(openIndex === index ? null : index);
   };
-
+ 
   const faqs = [
     {
       question: "How do I book a PG through HloPG?",
@@ -49,7 +49,7 @@ function AboutUs() {
         "Our support team is available to guide you throughout your search and moving process, ensuring a hassle-free experience.",
     },
   ];
-
+ 
   return (
     <div className="aboutus-wrapper">
       {/* ================= About Us Section ================= */}
@@ -58,7 +58,7 @@ function AboutUs() {
         <div className="aboutus-image">
           <img src={aboutMain} alt="About Hlo PG" />
         </div>
-
+ 
         {/* Right Content */}
         <div className="aboutus-content">
           <h2 className="aboutus-heading">
@@ -68,7 +68,7 @@ function AboutUs() {
             From students to professionals, we’ve got you covered. <br />
             Discover verified PGs that feel like home.
           </p>
-
+ 
           {/* Icons */}
           <div className="aboutus-icons">
             <div className="aboutus-icon-item">
@@ -90,7 +90,7 @@ function AboutUs() {
           </div>
         </div>
       </div>
-
+ 
       {/* ================= Why Us Section ================= */}
       <section className="whyus-section">
         <h2 className="whyus-heading">
@@ -101,7 +101,7 @@ function AboutUs() {
           transparent, and hassle-free experience. Here's what makes us
           different:
         </p>
-
+ 
         <div className="whyus-cards">
           <div className="whyus-card">
             <div className="whyus-icon">
@@ -114,7 +114,7 @@ function AboutUs() {
               get.
             </p>
           </div>
-
+ 
           <div className="whyus-card">
             <div className="whyus-icon">
               <FaRupeeSign />
@@ -125,7 +125,7 @@ function AboutUs() {
               unnecessary fees and hidden charges.
             </p>
           </div>
-
+ 
           <div className="whyus-card">
             <div className="whyus-icon">
               <FaSearch />
@@ -136,7 +136,7 @@ function AboutUs() {
               can budget with confidence.
             </p>
           </div>
-
+ 
           <div className="whyus-card">
             <div className="whyus-icon">
               <FaUsers />
@@ -147,7 +147,7 @@ function AboutUs() {
               fostering a community built on trust.
             </p>
           </div>
-
+ 
           <div className="whyus-card">
             <div className="whyus-icon">
               <FaFilter />
@@ -158,7 +158,7 @@ function AboutUs() {
               perfect home easier than ever.
             </p>
           </div>
-
+ 
           <div className="whyus-card">
             <div className="whyus-icon">
               <FaHeadset />
@@ -171,7 +171,7 @@ function AboutUs() {
           </div>
         </div>
       </section>
-      
+     
       {/* ================= Mission & Vision Section ================= */}
       <section className="mission-vision-section">
         <h2 className="mission-vision-heading">
@@ -189,7 +189,7 @@ function AboutUs() {
             </p>
             <h3 className="mv-title">Our Mission</h3>
           </div>
-
+ 
           {/* Vision */}
           <div className="mv-card">
             <img src={visionImg} alt="Our Vision" className="mv-img" />
@@ -203,9 +203,9 @@ function AboutUs() {
           </div>
         </div>
       </section>
-
+ 
       {/* ================= FAQ Section ================= */}
-      <section className="faq-section">
+      <section id="faq" className="faq-section">
         <h2 className="faq-heading">
           Frequently Asked <span>Questions</span>
         </h2>
@@ -224,10 +224,10 @@ function AboutUs() {
           ))}
         </div>
       </section>
-
-      
+ 
+     
     </div>
   );
 }
-
+ 
 export default AboutUs;

@@ -72,7 +72,7 @@ const RoleSelection = () => {
         disabled={!selectedRole}
         onClick={handleSignIn}
       >
-        Sign In
+        Sign Up
       </button>
     </div>
   );
