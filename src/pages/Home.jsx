@@ -642,7 +642,7 @@ function Home() {
     const BACKEND_URL =
       import.meta.env.MODE === "development"
         ? "http://localhost:8080"
-        : "https://hlopgbackend.in"; // ✅ CHANGE THIS DOMAIN IF DIFFERENT
+        : "http://72.61.241.195:8080/"; // ✅ CHANGE THIS DOMAIN IF DIFFERENT
 
     // If imagePath already starts with /uploads
     if (imagePath.startsWith("/uploads")) {
