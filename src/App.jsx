@@ -155,13 +155,12 @@
 // export default App;
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
- 
- 
+
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import IntroVideo from "./components/IntroVideo";
 import LoadingVideo from "./components/LoadingVideo";
- 
+
 // Pages
 import Home from "./pages/Home";
 import AboutUs from "./pages/AboutUs";
@@ -184,50 +183,48 @@ import UserProfile from "./pages/UserPanel";
 import Contact from "./pages/Contact";
 import ProfilePage from "./pages/ProfilePage";
 import CommonLogin from "./pages/CommonLogin";
-import ScrollToTop from "./components/ScrollToTop";
- 
- 
+
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
- 
+
   // State to track if owner is logged in
   const [isOwnerLoggedIn, setIsOwnerLoggedIn] = useState(false);
- 
+
   // Check login status on mount and when location changes
   useEffect(() => {
     const checkLoginStatus = () => {
       const token = localStorage.getItem("hlopgToken");
       const role = localStorage.getItem("hlopgRole");
-     
+      
       const ownerLoggedIn = !!(token && role === "OWNER");
       setIsOwnerLoggedIn(ownerLoggedIn);
-     
-      console.log("🔍 Login check:", {
-        token: token ? "Yes" : "No",
-        role,
+      
+      console.log("🔍 Login check:", { 
+        token: token ? "Yes" : "No", 
+        role, 
         isOwner: ownerLoggedIn,
-        currentPath: location.pathname
+        currentPath: location.pathname 
       });
-     
+      
       // If owner is logged in AND trying to access homepage, redirect to dashboard
       if (ownerLoggedIn && location.pathname === "/") {
         console.log("🚀 Owner logged in - redirecting to dashboard");
         navigate("/owner-dashboard", { replace: true });
       }
     };
-   
+    
     checkLoginStatus();
-   
+    
     // Listen for storage changes (logout/login)
     const handleStorageChange = () => {
       checkLoginStatus();
     };
-   
+    
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [location.pathname, navigate]);
- 
+
   // --------------------------
   // INTRO VIDEO (Skip if owner is logged in)
   // --------------------------
@@ -235,64 +232,64 @@ function App() {
     // Skip intro for logged-in owners
     const token = localStorage.getItem("hlopgToken");
     const role = localStorage.getItem("hlopgRole");
-   
+    
     if (token && role === "OWNER") {
       return false;
     }
-   
+    
     const seen = localStorage.getItem("seenIntro");
     return !seen;
   });
- 
+
   useEffect(() => {
     if (showIntro === false) {
       localStorage.setItem("seenIntro", "true");
     }
   }, [showIntro]);
- 
+
   // --------------------------
   // LOADING VIDEO (Skip if owner is logged in)
   // --------------------------
   const [loading, setLoading] = useState(false);
- 
+
   useEffect(() => {
     // Skip loading for logged-in owners
     if (isOwnerLoggedIn) {
       return;
     }
-   
+    
     const path = location.pathname;
- 
+
     if (path === "/" && !showIntro) {
       setLoading(true);
       const timer = setTimeout(() => setLoading(false), 5000);
       return () => clearTimeout(timer);
     }
- 
+
     if (path.startsWith("/hostel/")) {
       setLoading(true);
       const timer = setTimeout(() => setLoading(false), 2000);
       return () => clearTimeout(timer);
     }
- 
+
     if (path.startsWith("/city/")) {
       setLoading(true);
       const timer = setTimeout(() => setLoading(false), 2000);
       return () => clearTimeout(timer);
     }
   }, [location.pathname, showIntro, isOwnerLoggedIn]);
- 
+
   // Server loader functions
   useEffect(() => {
     window.showServerLoader = () => setLoading(true);
     window.hideServerLoader = () => setLoading(false);
   }, []);
- 
+
   const hideHeaderFooter =
     location.pathname.startsWith("/owner-dashboard") ||
     location.pathname.startsWith("/view") ||
     location.pathname === "/owner-profile";
- 
+
   // If owner is logged in and trying to access homepage, show nothing
   if (isOwnerLoggedIn && location.pathname === "/") {
     return (
@@ -301,28 +298,27 @@ function App() {
       </div>
     );
   }
- 
+
   return (
     <div className="app-container">
       {/* INTRO VIDEO (skip for owners) */}
       {showIntro && !isOwnerLoggedIn && <IntroVideo onFinish={() => setShowIntro(false)} />}
- 
+
       {/* LOADING VIDEO (skip for owners) */}
       {!showIntro && loading && !isOwnerLoggedIn && <LoadingVideo />}
- 
+
       {/* HEADER */}
       {!hideHeaderFooter && !showIntro && !loading && <Header />}
- 
+
       <main className="content">
-        <ScrollToTop />
         {!showIntro && (
           <Routes>
             {/* Home route - only accessible if NOT logged in as owner */}
-            <Route
-              path="/"
-              element={!isOwnerLoggedIn ? <Home /> : null}
+            <Route 
+              path="/" 
+              element={!isOwnerLoggedIn ? <Home /> : null} 
             />
-           
+            
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/hostel/:hostelId" element={<HostelPage />} />
@@ -336,13 +332,13 @@ function App() {
             <Route path="/owner-forgot-password" element={<OwnerForgetPassword />} />
             <Route path="/login" element={<CommonLogin />} />
             <Route path="/user-dashboard" element={<UserProfile />} />
-           
+            
             {/* Owner dashboard - only accessible if logged in as owner */}
-            <Route
-              path="/owner-dashboard"
-              element={isOwnerLoggedIn ? <AdminPanel /> : <RoleSelection />}
+            <Route 
+              path="/owner-dashboard" 
+              element={isOwnerLoggedIn ? <AdminPanel /> : <RoleSelection />} 
             />
-           
+            
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/upload-pg" element={<UploadPG />} />
             <Route path="/my-pgs" element={<MyPGs />} />
@@ -352,11 +348,11 @@ function App() {
           </Routes>
         )}
       </main>
- 
+
       {/* FOOTER */}
       {!hideHeaderFooter && !showIntro && !loading && <Footer />}
     </div>
   );
 }
- 
+
 export default App;
