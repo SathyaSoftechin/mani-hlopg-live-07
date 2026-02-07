@@ -913,7 +913,7 @@ const getFullImageUrl = (imagePath) => {
             <button className="modal-close" onClick={closeLogoutModal}>
               <FaTimes />
             </button>
-            <p>Are you sure you want to logout?</p>
+            <p style={{fontSize:20,marginTop:30}}>Are you sure you want to logout?</p>
             <div className="modal-actions">
               <button className="modal-cancel" onClick={closeLogoutModal}>
                 Cancel
