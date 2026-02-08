@@ -1,397 +1,362 @@
-
-
-// src/pages/AdminPanel.jsx
-import React, { useState, useEffect, useRef } from "react";
-import {
-  FaUser,
-  FaHome,
-  FaMoneyBill,
-  FaHeart,
-  FaCogs,
-  FaUpload,
-  FaList,
-  FaSignOutAlt,
-  FaBell,
-  FaCog,
-  FaKey,
-  FaFileAlt,
-  FaUserCircle,
-  FaEnvelope,
-  FaPhone,
-  FaMapMarkerAlt,
-  FaVenusMars,
-  FaEdit,
-  FaLocationArrow,
-  FaClosedCaptioning
-} from "react-icons/fa";
-
-import Dashboard from "./Dashboard";
-import UploadPG from "./UploadPG";
-import MyPGs from "./MyPGs";
-import MyRooms from "./MyRooms";
-
-import Reviews from "./Reviews";
-
-import Logo from "../assets/logo.png";
-
-import "./AdminPanel.css";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import "./AuthModal.css";
 import api from "../api";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { GoogleLogin } from "@react-oauth/google";
 
-const sidebarOptions = [
-  { name: "Dashboard", icon: <FaHome /> },
-  { name: "Upload PG", icon: <FaUpload /> },
-  { name: "My PG’s", icon: <FaList /> },
-  { name: "My Rooms", icon: <FaUser /> },
-  { name: "Reviews", icon: <FaHeart /> },
-   { name: "Logout", icon: <FaSignOutAlt /> },
-];
+const AuthModal = ({ isOpen, onClose, onSuccess }) => {
+  const [step, setStep] = useState("signup"); // signup -> otp -> login
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-const PGSelection = ({ pgs = [], onSelect, loading }) => {
-  const navigate = useNavigate();
+  const [loginData, setLoginData] = useState({
+    identifier: "",
+    password: "",
+  });
 
-  if (loading) {
-    return (
-      <div className="pg-selection-loading">
-        <div className="spinner"></div>
-        <p>Loading your PGs...</p>
-      </div>
-    );
-  }
+  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [tempPhone, setTempPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
-  if (pgs.length === 0) {
-    return (
-      <div className="pg-selection-empty">
-        <div className="empty-icon"><FaHome/></div>
-        <h3>No PGs Found</h3>
-        <p>You need to upload a PG first to manage rooms.</p>
-        <button 
-          className="upload-btn"
-          onClick={() => navigate("/owner-dashboard?tab=Upload PG")}
-        >
-          Upload Your First PG
-        </button>
-      </div>
-    );
-  }
+  if (!isOpen) return null;
 
-return (
-    <div className="pg-selection-container">
-      <h2>Select a PG to Manage Rooms</h2>
-      <p>Choose from your PGs below:</p>
-      
-      <div className="pg-selection-grid">
-        {pgs.map((pg) => (
-          <div 
-            key={pg.hostel_id} 
-            className="pg-selection-card"
-            onClick={() => onSelect(pg)}
-          >
-            <div className="pg-selection-image">
-              <img 
-                src={pg.img || "https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=PG"} 
-                alt={pg.hostel_name}
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=PG";
-                }}
-              />
-            </div>
-            <div className="pg-selection-info">
-              <h3>{pg.hostel_name}</h3>
-              <p><FaLocationArrow/> {pg.area}, {pg.city}</p>
-              <div className="pg-selection-stats">
-                <span>Rooms: {pg.total_rooms || 0}</span>
-                <span>Occupied: {pg.occupied_rooms || 0}</span>
-                <span>Vacant: {pg.vacant_rooms || 0}</span>
-              </div>
-              <button className="select-btn">
-                Manage Rooms
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+  // Signup submit
+  const handleSignupSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-const AdminPanel = () => {
-  const [selected, setSelected] = useState("Dashboard");
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const dropdownRef = useRef(null);
-  const [selectedPG, setSelectedPG] = useState(null);
- 
-   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    try {
+      const res = await api.post("/auth/register/user", formData);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowProfileDropdown(false);
+      if (res.data.success) {
+        setTempPhone(formData.phone);
+        setStep("otp");
+        setMessage("✅ OTP sent!");
+      } else {
+        setMessage(res.data.message);
       }
-    };
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Signup Error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  // OTP verify
+  const verifyOTP = async () => {
+    const enteredOTP = otp.join("");
+    if (enteredOTP.length !== 4) return setMessage("Enter 4-digit OTP");
 
-  // Auth check - Keep your existing useEffect
-  useEffect(() => {
-    const verifyAndFetchUser = async () => {
-      const token = localStorage.getItem("hlopgToken");
-      
-      console.log("🔍 AdminPanel - Checking localStorage with token:", token ? "Token exists" : "No token");
-      
-      if (!token) {
-        console.log("❌ No token, redirecting to RoleSelection");
-        navigate("/RoleSelection");
-        return;
-      }
+    setLoading(true);
+    setMessage("");
 
-      try {
-        console.log("🔄 Fetching owner data from API...");
-        const ownerRes = await api.get("/auth/ownerid", {
-          headers: { Authorization: `Bearer ${token}` },
+    try {
+      const res = await api.post("/auth/verify-otp", {
+        identifier: tempPhone,
+        otpCode: enteredOTP,
+        purpose: "REGISTRATION",
+      });
+
+      if (res.data.success) {
+        setStep("login");
+        setMessage("✅ Registration complete. Please login.");
+        setOtp(["", "", "", ""]);
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          password: "",
+          confirmPassword: "",
         });
-        
-        if (ownerRes.status === 200 && ownerRes.data) {
-          console.log("✅ Owner data fetched:", ownerRes.data);
-          
-          const ownerData = {
-            id: ownerRes.data.id,
-            name: ownerRes.data.name,
-            email: ownerRes.data.email,
-            phone: ownerRes.data.phone,
-            userType: ownerRes.data.userType,
-            owner_id: ownerRes.data.id,
-            // Add additional fields with defaults if not present
-            gender: ownerRes.data.gender || "Male",
-            city: ownerRes.data.city || "Hyderabad",
-            profileInitial: ownerRes.data.name ? ownerRes.data.name.charAt(0).toUpperCase() : "O"
-          };
-          
-          setUser(ownerData);
-          localStorage.setItem("hlopgOwner", JSON.stringify(ownerData));
-          localStorage.removeItem("hlopgUser");
-        } else {
-          throw new Error("Invalid response from server");
-        }
-      } catch (fetchErr) {
-        console.error("❌ Error fetching owner:", fetchErr);
-        
-        // Fallback to cached data
-        const cachedOwner = localStorage.getItem("hlopgOwner");
-        if (cachedOwner) {
-          try {
-            console.log("🔄 Using cached owner data");
-            const parsedOwner = JSON.parse(cachedOwner);
-            parsedOwner.profileInitial = parsedOwner.name ? parsedOwner.name.charAt(0).toUpperCase() : "O";
-            setUser(parsedOwner);
-          } catch (e) {
-            console.error("❌ Error parsing cached owner:", e);
-            localStorage.removeItem("hlopgOwner");
-            navigate("/RoleSelection");
-          }
-        } else {
-          console.log("❌ No cached data, redirecting to RoleSelection");
-          navigate("/RoleSelection");
-        }
+      } else {
+        setMessage(res.data.message || "OTP failed");
       }
-    };
-
-    verifyAndFetchUser();
-  }, [navigate]);
-
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("hlopgToken");
-    localStorage.removeItem("hlopgUser");
-    localStorage.removeItem("hlopgOwner");
-    setShowProfileDropdown(false);
-    alert("Logged out successfully!");
-    navigate("/");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "OTP failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleMyRoomsClick = () => {
-    // Fetch user's PGs and show selection modal
-    // Or directly navigate to room management for first PG
-    setSelected("My Rooms");
+  // Login submit
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const res = await api.post("/auth/login/user", loginData);
+
+      if (res.data.success) {
+        localStorage.setItem("hlopgToken", res.data.data.token);
+        localStorage.setItem("hlopgUser", JSON.stringify(res.data.data.user));
+
+        setMessage("✅ Login successful!");
+
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+        }, 800);
+      } else {
+        setMessage(res.data.message);
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // When a PG is selected for room management
-  const handlePGSelectForRooms = (pg) => {
-    setSelectedPG(pg);
-    setSelected("PG Rooms"); // Add new option
-  };
+  // ✅ GOOGLE LOGIN HANDLER
+  const handleGoogleLogin = async (credentialResponse) => {
+    try {
+      setLoading(true);
+      setMessage("");
 
-  // Toggle profile dropdown
-  const toggleProfileDropdown = () => {
-    setShowProfileDropdown(!showProfileDropdown);
-  };
+      const res = await api.post("/auth/google", {
+        token: credentialResponse.credential,
+      });
 
-  // Get user initials for profile icon
-  const getUserInitials = () => {
-    if (!user || !user.name) return "O";
-    return user.name.charAt(0).toUpperCase();
-  };
+      if (res.data.success) {
+        localStorage.setItem("hlopgToken", res.data.token);
+        localStorage.setItem("hlopgUser", JSON.stringify(res.data.user));
 
-  // Get greeting based on time
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 18) return "Good Afternoon";
-    return "Good Evening";
-  };
+        setMessage("✅ Google Login Successful!");
 
-  // Profile dropdown menu items
-  const dropdownMenuItems = [
-    { icon: <FaBell />, text: "Notifications", badge: "3", onClick: () => alert("Notifications clicked") },
-    { icon: <FaKey />, text: "Change Password", onClick: () => alert("Change Password clicked") },
-    { icon: <FaFileAlt />, text: "Terms And Conditions", onClick: () => alert("Terms clicked") },
-  ];
-
-  // Render selected component
-  const renderComponent = () => {
-    switch (selected) {
-      case "Dashboard":
-        return <Dashboard user={user} />;
-      case "Upload PG":
-        return <UploadPG />;
-      case "My PG’s":
-        return <MyPGs user={user} onSelectForRooms={handlePGSelectForRooms} />;
-      case "My Rooms":
-         return <MyRooms user={user} />;
-      
-      case "Reviews":
-        return <Reviews />;
-      default:
-        return (
-          <div className="placeholder">
-            <h2>{selected}</h2>
-            <p>Content coming soon...</p>
-          </div>
-        );
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+        }, 800);
+      } else {
+        setMessage(res.data.message || "Google login failed");
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Google login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="admin-panel-container">
-      {/* Sidebar - Keep your existing sidebar */}
-      <aside className="admin-panel-sidebar">
-        <div className="admin-panel-sidebar-top">
-          <div
-            className="logo-container"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/")}
-          >
-            <h2 className="logo">
-              <img src={Logo} alt="HloPG Logo" />
-            </h2>
-          </div>
+    <div className="auth-modal-overlay" onClick={onClose}>
+      <div className="auth-card" onClick={(e) => e.stopPropagation()}>
+        <button className="auth-close-btn" onClick={onClose}>
+          ✕
+        </button>
 
-          <ul className="admin-panel-sidebar-menu">
-            {sidebarOptions.map((item) => (
-              <li
-                key={item.name}
-                className={`admin-panel-menu-item ${selected === item.name ? "active" : ""}`}
-                onClick={() => {
-        if (item.name === "Logout") {
-          setShowLogoutConfirm(true); // Show logout confirmation
-        } else {
-          setSelected(item.name);
-        }
-      }}
-    >
-              
-                <span className="admin-panel-icon">{item.icon}</span>
-                <span className="admin-panel-label">{item.name}</span>
-              </li>
-            ))}
-          </ul>
+        {/* Logo */}
+        <div className="auth-logo">
+          <img src="/logo.png" alt="Logo" />
         </div>
 
-        
-        
-      </aside>
+        {/* Message */}
+        {message && <div className="auth-message">{message}</div>}
 
-      {/* Main Content with Header */}
-      <main className="admin-panel-main-content">
-        {/* Header with Profile Icon */}
-        <header className="admin-panel-header">
-          <div className="admin-panel-header-left">
-            <h1>{getGreeting()}, {user?.name || "Owner"}!</h1>
-            <p>Welcome to your HloPG Dashboard</p>
+        {/* =================== SIGNUP =================== */}
+        {step === "signup" && (
+          <form className="auth-form" onSubmit={handleSignupSubmit}>
+            <h2>Signup</h2>
+
+            <input
+              type="text"
+              placeholder="Name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              required
+            />
+
+            <input
+              type="text"
+              placeholder="Mobile Number"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+              required
+            />
+
+            <input
+              type="email"
+              placeholder="Enter Email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              required
+            />
+
+            <div className="auth-password-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter Password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                required
+              />
+              <span
+                className="auth-eye"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <AiOutlineEyeInvisible size={20} />
+                ) : (
+                  <AiOutlineEye size={20} />
+                )}
+              </span>
+            </div>
+
+            <div className="auth-password-wrapper">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                value={formData.confirmPassword}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    confirmPassword: e.target.value,
+                  })
+                }
+                required
+              />
+              <span
+                className="auth-eye"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <AiOutlineEyeInvisible size={20} />
+                ) : (
+                  <AiOutlineEye size={20} />
+                )}
+              </span>
+            </div>
+
+            <button type="submit" className="auth-btn" disabled={loading}>
+              {loading ? "Signing up..." : "Verify"}
+            </button>
+
+            <div className="auth-switch">
+              Do you have an Account?{" "}
+              <span onClick={() => setStep("login")}>Login</span>
+            </div>
+
+            <div className="auth-or">Or</div>
+
+            {/* ✅ REAL GOOGLE BUTTON */}
+            <div className="google-login-wrapper">
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={() => setMessage("Google Login Failed")}
+              />
+            </div>
+          </form>
+        )}
+
+        {/* =================== OTP =================== */}
+        {step === "otp" && (
+          <div className="auth-otp-section">
+            <h2>Verify OTP</h2>
+            <p>Enter OTP sent to {tempPhone}</p>
+
+            <div className="auth-otp-inputs">
+              {[0, 1, 2, 3].map((idx) => (
+                <input
+                  key={idx}
+                  id={`otp-${idx}`}
+                  type="text"
+                  maxLength="1"
+                  value={otp[idx]}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/, "");
+                    const newOtp = [...otp];
+                    newOtp[idx] = val[0] || "";
+                    setOtp(newOtp);
+
+                    if (val && idx < 3)
+                      document.getElementById(`otp-${idx + 1}`)?.focus();
+                  }}
+                />
+              ))}
+            </div>
+
+            <button onClick={verifyOTP} className="auth-btn" disabled={loading}>
+              {loading ? "Verifying..." : "Verify"}
+            </button>
           </div>
+        )}
 
-          {/* Profile Section */}
-          {/* Profile Section - AdminPanel.jsx */}
-<div className="admin-panel-profile-section" ref={dropdownRef}>
-  <button 
-    className="admin-panel-profile-icon-btn" 
-    onClick={() => navigate("/owner-profile")}  
-    aria-label="Profile menu"
-  >
-    <div className="admin-panel-profile-icons">
-      {getUserInitials()}
-    </div>
-  </button>
-</div>
-    
-  </header>
+        {/* =================== LOGIN =================== */}
+        {step === "login" && (
+          <form className="auth-form" onSubmit={handleLoginSubmit}>
+            <h2>Login</h2>
 
+            <input
+              type="text"
+              placeholder="Email / Phone Number"
+              value={loginData.identifier}
+              onChange={(e) =>
+                setLoginData({ ...loginData, identifier: e.target.value })
+              }
+              required
+            />
 
-        {/* Main Content Body */}
-        <div className="admin-panel-content-body">
-          {renderComponent()}
-        </div>
-      </main>
-       {/* Add this logout confirmation modal */}
-      {showLogoutConfirm && (
-  <div className="logout-confirmation-modal">
-    <div className="logout-confirmation-content">
-      {/* Close Button - Top Right */}
-      <button 
-        className="modal-close-btn"
-        onClick={() => setShowLogoutConfirm(false)}
-        aria-label="Close"
-      >
-        ×
-      </button>
-      
-      <h3>Are you sure you want to logout?</h3>
-      {/* <p>You will be redirected to the homepage.</p> */}
-      <div className="logout-confirmation-buttons">
-        <button 
-          className="logout-confirm-cancel"
-          onClick={() => setShowLogoutConfirm(false)}
-        >
-          Cancel
-        </button>
-        <button 
-          className="logout-confirm-logout"
-          onClick={() => {
-            localStorage.removeItem("hlopgToken");
-            localStorage.removeItem("hlopgUser");
-            localStorage.removeItem("hlopgOwner");
-            setShowLogoutConfirm(false);
-            navigate("/");
-          }}
-        >
-          Yes, Logout
-        </button>
+            <div className="auth-password-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter Password"
+                value={loginData.password}
+                onChange={(e) =>
+                  setLoginData({ ...loginData, password: e.target.value })
+                }
+                required
+              />
+              <span
+                className="auth-eye"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <AiOutlineEyeInvisible size={20} />
+                ) : (
+                  <AiOutlineEye size={20} />
+                )}
+              </span>
+            </div>
+
+            <button type="submit" className="auth-btn" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </button>
+
+            <div className="auth-switch">
+              New User <span onClick={() => setStep("signup")}>Signup</span>
+            </div>
+
+            <div className="auth-or">Or</div>
+
+            {/* ✅ REAL GOOGLE BUTTON */}
+            <div className="google-login-wrapper">
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={() => setMessage("Google Login Failed")}
+              />
+            </div>
+          </form>
+        )}
       </div>
-    </div>
-  </div>
-)}
     </div>
   );
 };
-    
 
-export default AdminPanel;
+export default AuthModal;
