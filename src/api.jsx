@@ -105,7 +105,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "/api", // ✅ IMPORTANT: Vercel rewrite endpoint
+  baseURL: "/api", // Vercel rewrite will forward this to backend
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
