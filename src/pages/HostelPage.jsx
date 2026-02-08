@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
-import "./HostelDetails.css";
+import "./HostelPage.css";
 
 // fallback images
 import pg1 from "../assets/pg1.jpg";
