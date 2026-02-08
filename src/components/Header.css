@@ -218,13 +218,14 @@
 /* ================= Auth Section ================= */
 .auth-section {
   display: flex;
-  flex-direction: row;   /* ✅ FORCE SIDE BY SIDE */
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   margin-left: 60px;
-  gap: 15px;             /* ✅ GAP BETWEEN BUTTONS */
-  flex-wrap: nowrap;     /* ✅ PREVENT STACKING */
+  gap: 15px;
+  flex-wrap: nowrap;
 }
+
 .login-btn {
   font-weight: 600 !important;
   padding: 10px 25px !important;
@@ -240,15 +241,14 @@
   text-decoration: none !important;
   font-family: "Inter", sans-serif !important;
   margin-right: 20px !important;
-  
-  
 }
 
 .login-btn:hover {
   background: #5d43cc !important;
   transform: scale(1.05) !important;
 }
-/* Signup Button - IMPORTANT FIX */
+
+/* Signup Button */
 .signup-btn {
   font-weight: 600 !important;
   padding: 10px 25px !important;
@@ -263,7 +263,6 @@
   display: inline-block !important;
   text-decoration: none !important;
   font-family: "Inter", sans-serif !important;
-  
 }
 
 .signup-btn:hover {
@@ -272,33 +271,45 @@
 }
 
 /* ================= Profile Icon ================= */
-.profile-icon {
+.profile-icon-container {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 24px !important;
-  color: #7556ff !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  padding: 10px !important;
-  border-radius: 50% !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
-.profile-icon:hover {
-  transform: scale(1.1) !important;
-  background: #7556ff !important;
-  color: white !important;
+.profile-icon-container:hover {
+  transform: scale(1.1);
+  background: #7556ff;
+}
+
+.profile-icon {
+  font-size: 28px;
+  color: #7556ff;
+  transition: all 0.3s ease;
+}
+
+.profile-icon-container:hover .profile-icon {
+  color: white;
+}
+
+/* ================= Scrolled Profile Icon ================= */
+.header.scrolled .profile-icon-container {
+  background: #7556ff;
 }
 
 .header.scrolled .profile-icon {
-  background: #7556ff !important;
-  color: white !important;
+  color: white;
 }
 
-.header.scrolled .profile-icon:hover {
-  background: #5d43cc !important;
+.header.scrolled .profile-icon-container:hover {
+  background: #5d43cc;
 }
 
 /* ================= Hamburger (Mobile) ================= */
