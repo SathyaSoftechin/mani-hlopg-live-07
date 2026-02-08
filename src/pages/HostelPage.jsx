@@ -8,7 +8,6 @@ import {
   FaBed,
   FaTv,
   FaLightbulb,
-  FaDoorClosed,
   FaChevronLeft,
   FaChevronRight,
   FaStar,
@@ -128,12 +127,17 @@ const HostelPage = () => {
         if (res.data.success) {
           const data = res.data.data;
 
-          // Fix image URLs
+          // ✅ Fix image URLs correctly
           if (data.images && Array.isArray(data.images) && data.images.length > 0) {
             data.images = data.images.map((img) => {
               if (!img) return pg1;
+
               if (img.startsWith("http")) return img;
-              if (img.startsWith("/uploads")) return `https://hlopg.com${img}`;
+
+              if (img.startsWith("/uploads")) {
+                return `https://hlopg.com${img}`;
+              }
+
               return `https://hlopg.com/uploads/${img}`;
             });
           } else if (data.img) {
@@ -163,7 +167,7 @@ const HostelPage = () => {
     fetchHostel();
   }, [hostelId]);
 
-  // ================= FETCH FOOD MENU (FIXED) =================
+  // ================= FETCH FOOD MENU (FULL FIX) =================
   useEffect(() => {
     const fetchFoodMenu = async () => {
       try {
@@ -171,13 +175,29 @@ const HostelPage = () => {
 
         console.log("🍽️ Fetching food menu for hostel:", hostelId);
 
-        // ONLY correct backend endpoint
         const res = await api.get(`/hostel/food_menu/${hostelId}`);
 
-        console.log("✅ Food menu response:", res.data);
+        console.log("✅ Food menu full response:", res.data);
 
-        if (res.data.success && res.data.data) {
-          setFoodMenu(res.data.data); // expecting array from backend
+        if (res.data.success) {
+          const data = res.data.data;
+
+          // ✅ Case 1: backend returns direct array
+          if (Array.isArray(data)) {
+            setFoodMenu(data);
+          }
+          // ✅ Case 2: backend returns { menu: [...] }
+          else if (data && Array.isArray(data.menu)) {
+            setFoodMenu(data.menu);
+          }
+          // ✅ Case 3: backend returns object
+          else if (data && typeof data === "object") {
+            setFoodMenu(Object.values(data));
+          }
+          // ❌ Unknown format
+          else {
+            setFoodMenu([]);
+          }
         } else {
           setFoodMenu([]);
         }
@@ -427,7 +447,11 @@ const HostelPage = () => {
                 Cancel
               </button>
 
-              <button type="submit" className="submit-btn" disabled={bookingLoading}>
+              <button
+                type="submit"
+                className="submit-btn"
+                disabled={bookingLoading}
+              >
                 {bookingLoading ? "Sending..." : "Send Booking Request"}
               </button>
             </div>
@@ -587,10 +611,10 @@ const HostelPage = () => {
             <tbody>
               {foodMenu.map((day, idx) => (
                 <tr key={idx}>
-                  <td>{day.day}</td>
-                  <td>{day.breakfast}</td>
-                  <td>{day.lunch}</td>
-                  <td>{day.dinner}</td>
+                  <td>{day.day || "N/A"}</td>
+                  <td>{day.breakfast || "-"}</td>
+                  <td>{day.lunch || "-"}</td>
+                  <td>{day.dinner || "-"}</td>
                 </tr>
               ))}
             </tbody>
