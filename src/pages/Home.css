@@ -119,14 +119,14 @@ body.no-scroll {
 /* ================= Scroll Section ================= */
 .pg-container {
   position: relative;
-  overflow: visible;
+  overflow: visible; /* 🔥 allow hover expansion */
+  padding-bottom: 40px; /* space for lifted cards */
 }
 
 .pg-scroll {
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: visible; /* 🔥 critical */
   scroll-behavior: smooth;
-  scrollbar-width: none;
 }
 
 .pg-scroll::-webkit-scrollbar {
@@ -153,6 +153,7 @@ body.no-scroll {
   z-index: 1;
   transition: transform 0.35s ease, box-shadow 0.35s ease;
   will-change: transform;
+  isolation: isolate;
 }
 
 .home-pg-card * {
@@ -161,8 +162,8 @@ body.no-scroll {
 
 
 .home-pg-card:hover {
-  transform: translateY(-12px) !important;
-  z-index: 20;
+  transform: translateY(-10px) !important;
+  z-index: 50;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18) !important;
 }
 
@@ -173,7 +174,6 @@ body.no-scroll {
   padding: 15px;                 /* ✅ creates white frame */
   border-radius: 20px 20px 0 0; /* matches card */
   overflow: hidden;
-
 }
 
 .home-pg-card .pg-image img {
