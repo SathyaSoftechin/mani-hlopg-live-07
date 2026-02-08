@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import "./HostelPage.css";
+
 import {
   FaWifi,
   FaFan,
@@ -15,12 +16,12 @@ import {
   FaParking,
   FaBroom,
   FaStarHalfAlt,
-  FaRegStar
+  FaRegStar,
 } from "react-icons/fa";
 
 import api from "../api";
 
-// fallback images
+// Fallback images
 import pg1 from "../assets/pg1.jpg";
 import pg2 from "../assets/pg2.jpg";
 import pg3 from "../assets/pg3.jpg";
@@ -59,67 +60,91 @@ const HostelPage = () => {
   const [foodMenu, setFoodMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuLoading, setMenuLoading] = useState(true);
-  const [mainImageIndex, setMainImageIndex] = useState(0);
 
+  const [mainImageIndex, setMainImageIndex] = useState(0);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+
   const [user, setUser] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // ⭐ Dummy Reviews
   const dummyReviews = [
     {
       id: 1,
       name: "Rahul Sharma",
       avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
       rating: 4.5,
-      comment: "Great PG, clean facilities and friendly staff. Food quality is excellent!",
-      date: "2 weeks ago"
-    }
+      comment:
+        "Great PG, clean facilities and friendly staff. Food quality is excellent!",
+      date: "2 weeks ago",
+    },
+    {
+      id: 2,
+      name: "Priya Patel",
+      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+      rating: 4.0,
+      comment:
+        "Good location and well-maintained rooms. WiFi could be better though.",
+      date: "1 month ago",
+    },
+    {
+      id: 3,
+      name: "Amit Kumar",
+      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+      rating: 5.0,
+      comment: "Best PG in the area! Owner is very cooperative and helpful.",
+      date: "3 days ago",
+    },
+    {
+      id: 4,
+      name: "Sneha Reddy",
+      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+      rating: 3.5,
+      comment: "Affordable price but need more parking space.",
+      date: "2 months ago",
+    },
+    {
+      id: 5,
+      name: "Vikram Singh",
+      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+      rating: 4.0,
+      comment: "Clean rooms and good food. Would recommend!",
+      date: "1 week ago",
+    },
   ];
 
   const avgRating =
     dummyReviews.reduce((sum, r) => sum + r.rating, 0) / dummyReviews.length;
   const totalReviews = dummyReviews.length;
 
-  // ✅ FIX IMAGE URL FUNCTION
-  const fixImageUrl = (img) => {
-    if (!img) return pg1;
-
-    // already full url
-    if (img.startsWith("http")) return img;
-
-    // remove any double slashes
-    const cleaned = img.startsWith("/") ? img : `/${img}`;
-
-    // IMPORTANT: this should match your backend domain
-    // api.defaults.baseURL is your backend url
-    return `${api.defaults.baseURL}${cleaned}`;
-  };
-
-  // ===================== FETCH HOSTEL =====================
+  // ================= FETCH HOSTEL DETAILS =================
   useEffect(() => {
     const fetchHostel = async () => {
       try {
-        setLoading(true);
-
-        console.log("🏠 Fetching hostel ID:", hostelId);
+        console.log("🏠 Fetching hostel with ID:", hostelId);
 
         const res = await api.get(`/hostel/${hostelId}`);
-        console.log("📡 Hostel Response:", res.data);
+        console.log("✅ Hostel API response:", res.data);
 
         if (res.data.success) {
           const data = res.data.data;
 
-          // if backend gives images array
+          // Fix image URLs
           if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-            data.images = data.images.map((img) => fixImageUrl(img));
-          }
-          // if backend gives only img
-          else if (data.img) {
-            data.images = [fixImageUrl(data.img)];
-          }
-          // fallback
-          else {
+            data.images = data.images.map((img) => {
+              if (!img) return pg1;
+              if (img.startsWith("http")) return img;
+              if (img.startsWith("/uploads")) return `https://hlopg.com${img}`;
+              return `https://hlopg.com/uploads/${img}`;
+            });
+          } else if (data.img) {
+            const mainImg = data.img.startsWith("http")
+              ? data.img
+              : data.img.startsWith("/uploads")
+              ? `https://hlopg.com${data.img}`
+              : `https://hlopg.com/uploads/${data.img}`;
+
+            data.images = [mainImg];
+          } else {
             data.images = [pg1, pg2, pg3, pg4, pg5];
           }
 
@@ -128,7 +153,7 @@ const HostelPage = () => {
           setHostelData(null);
         }
       } catch (err) {
-        console.error("❌ Hostel fetch error:", err.response?.data || err.message);
+        console.error("❌ Error fetching hostel:", err);
         setHostelData(null);
       } finally {
         setLoading(false);
@@ -138,69 +163,26 @@ const HostelPage = () => {
     fetchHostel();
   }, [hostelId]);
 
-  // ===================== FETCH FOOD MENU =====================
+  // ================= FETCH FOOD MENU (FIXED) =================
   useEffect(() => {
     const fetchFoodMenu = async () => {
       try {
         setMenuLoading(true);
 
-        const endpoints = [
-          `/hostel/food_menu/${hostelId}`,
-          `/food_menu/${hostelId}`,
-          `/hostel/${hostelId}/food_menu`
-        ];
+        console.log("🍽️ Fetching food menu for hostel:", hostelId);
 
-        let menuData = null;
+        // ONLY correct backend endpoint
+        const res = await api.get(`/hostel/food_menu/${hostelId}`);
 
-        for (const endpoint of endpoints) {
-          try {
-            console.log("🍽️ Trying food menu endpoint:", endpoint);
+        console.log("✅ Food menu response:", res.data);
 
-            const res = await api.get(endpoint);
-
-            if (res.data.success) {
-              menuData = res.data.data;
-              break;
-            }
-          } catch (err) {
-            console.log("❌ Failed:", endpoint);
-          }
-        }
-
-        if (!menuData) {
+        if (res.data.success && res.data.data) {
+          setFoodMenu(res.data.data); // expecting array from backend
+        } else {
           setFoodMenu([]);
-          return;
         }
-
-        // if string JSON
-        if (typeof menuData === "string") {
-          menuData = JSON.parse(menuData);
-        }
-
-        // if array
-        if (Array.isArray(menuData)) {
-          setFoodMenu(menuData);
-          return;
-        }
-
-        // if object weekly menu
-        if (typeof menuData === "object") {
-          const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-
-          const processed = days.map((day) => ({
-            day: day.charAt(0).toUpperCase() + day.slice(1),
-            breakfast: menuData.breakfast?.[day] || "-",
-            lunch: menuData.lunch?.[day] || "-",
-            dinner: menuData.dinner?.[day] || "-"
-          }));
-
-          setFoodMenu(processed);
-          return;
-        }
-
-        setFoodMenu([]);
       } catch (err) {
-        console.error("❌ Food menu error:", err.response?.data || err.message);
+        console.error("❌ Error fetching food menu:", err);
         setFoodMenu([]);
       } finally {
         setMenuLoading(false);
@@ -210,111 +192,176 @@ const HostelPage = () => {
     if (hostelId) fetchFoodMenu();
   }, [hostelId]);
 
-  // ===================== IMAGE CAROUSEL =====================
+  // ================= IMAGE CAROUSEL =================
   const images =
-    hostelData?.images?.length > 0 ? hostelData.images : [pg1, pg2, pg3, pg4, pg5];
+    hostelData?.images && hostelData.images.length > 0
+      ? hostelData.images
+      : [pg1, pg2, pg3, pg4, pg5];
 
-  const prevImage = () => {
+  const prevImage = () =>
     setMainImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
 
-  const nextImage = () => {
+  const nextImage = () =>
     setMainImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
 
-  // ===================== BOOK NOW =====================
-  const handleBookNow = () => {
-    const token = localStorage.getItem("hlopgToken");
-    const owner = localStorage.getItem("hlopgOwner");
+  // ================= BOOK NOW BUTTON =================
+  const handleBookNow = async () => {
+    try {
+      const token = localStorage.getItem("hlopgToken");
+      const owner = localStorage.getItem("hlopgOwner");
 
-    if (owner) {
-      alert("You are logged in as Hostel Owner. Not authorized to book.");
-      return;
-    }
-
-    if (!token) {
-      alert("Please login to book.");
-      navigate("/StudentLogin", { state: { from: location.pathname } });
-      return;
-    }
-
-    setIsPopupOpen(true);
-
-    const cachedUser = localStorage.getItem("hlopgUser");
-    if (cachedUser) {
-      try {
-        setUser(JSON.parse(cachedUser));
-      } catch {
-        setUser(null);
+      if (owner) {
+        alert("You are logged in as Hostel Owner. Not authorized to book.");
+        return;
       }
+
+      if (!token) {
+        alert("Please log in to send booking request.");
+        navigate("/StudentLogin", { state: { from: location.pathname } });
+        return;
+      }
+
+      setIsPopupOpen(true);
+
+      const userStr = localStorage.getItem("hlopgUser");
+      if (userStr && userStr !== "undefined" && userStr !== "null") {
+        try {
+          const cachedUser = JSON.parse(userStr);
+          setUser(cachedUser);
+          return;
+        } catch (e) {
+          console.log("⚠️ Could not parse cached user");
+        }
+      }
+
+      const res = await api.get("/auth/userid", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.data) {
+        const formattedUser = {
+          id: res.data.id || Date.now(),
+          name: res.data.name || "User",
+          email: res.data.email || "",
+          phone: res.data.phone || "",
+          userType: res.data.userType || "USER",
+        };
+
+        setUser(formattedUser);
+        localStorage.setItem("hlopgUser", JSON.stringify(formattedUser));
+      }
+    } catch (err) {
+      console.error("❌ Error in handleBookNow:", err);
+      setUser({
+        id: Date.now(),
+        name: "User",
+        email: "",
+        phone: "",
+        userType: "USER",
+      });
+      setIsPopupOpen(true);
     }
   };
 
-  // ===================== CREATE BOOKING =====================
+  // ================= CREATE BOOKING REQUEST =================
   const handleCreateBooking = async (bookingData) => {
     try {
       setBookingLoading(true);
 
-      const token = localStorage.getItem("hlopgToken");
+      if (!bookingData.user) {
+        alert("Please provide your information");
+        return;
+      }
+
+      const currentUser = bookingData.user;
 
       const bookingPayload = {
         hostel_id: parseInt(hostelId),
-        user_name: bookingData.user.name,
-        user_email: bookingData.user.email,
-        user_phone: bookingData.user.phone,
+        user_name: currentUser.name,
+        user_email: currentUser.email,
+        user_phone: currentUser.phone,
         sharing_type: bookingData.sharing,
-        booking_date: new Date().toISOString().split("T")[0]
+        booking_date: new Date().toISOString().split("T")[0],
       };
 
-      console.log("📤 Booking payload:", bookingPayload);
+      console.log("📤 Sending booking payload:", bookingPayload);
 
-      const res = await api.post("/booking/request", bookingPayload, {
-        headers: { Authorization: `Bearer ${token}` }
+      const token = localStorage.getItem("hlopgToken");
+
+      const bookingRes = await api.post("/booking/request", bookingPayload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
-      console.log("✅ Booking response:", res.data);
+      console.log("✅ Booking response:", bookingRes.data);
 
-      if (res.data.success) {
-        alert("✅ Booking Request Sent Successfully! Owner will contact you soon.");
+      if (bookingRes.data.success) {
+        alert(
+          `✅ Booking Request Sent Successfully!\n\n🏠 PG: ${hostelData.hostel_name}\n📍 Location: ${
+            hostelData.address || hostelData.city
+          }\n🛏️ Sharing: ${bookingData.sharing}\n\n📞 Owner will contact you soon.`
+        );
+
+        localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
         setIsPopupOpen(false);
       } else {
-        alert(res.data.message || "Booking failed");
+        alert("Booking failed: " + (bookingRes.data.message || "Unknown error"));
       }
     } catch (err) {
-      console.error("❌ Booking error:", err.response?.data || err.message);
-      alert("Booking request failed. Try again.");
+      console.error("❌ Booking error:", err);
+      alert("Booking request failed. Please try again.");
     } finally {
       setBookingLoading(false);
     }
   };
 
-  // ===================== BOOKING POPUP =====================
+  // ================= BOOKING POPUP =================
   const BookingPopup = ({ onClose, onSubmit }) => {
     const [selectedSharing, setSelectedSharing] = useState("single");
     const [userPhone, setUserPhone] = useState(user?.phone || "");
     const [userName, setUserName] = useState(user?.name || "");
     const [userEmail, setUserEmail] = useState(user?.email || "");
 
+    const sharingOptions = hostelData?.sharing_data
+      ? Object.entries(hostelData.sharing_data).map(([type, price]) => ({
+          value: type,
+          label: `${type.toUpperCase()} - ₹${price}/month`,
+        }))
+      : [
+          { value: "single", label: "Single Sharing" },
+          { value: "double", label: "Double Sharing" },
+          { value: "triple", label: "Triple Sharing" },
+        ];
+
     const handleSubmit = (e) => {
       e.preventDefault();
 
-      if (!userName.trim()) return alert("Enter name");
-      if (!userEmail.trim()) return alert("Enter email");
-      if (!userPhone.trim() || userPhone.length < 10) return alert("Enter valid phone number");
+      if (!userName.trim()) {
+        alert("Please enter your name");
+        return;
+      }
+      if (!userEmail.trim()) {
+        alert("Please enter your email");
+        return;
+      }
+      if (!userPhone.trim() || userPhone.length < 10) {
+        alert("Please enter valid phone number");
+        return;
+      }
 
       const bookingUser = {
         id: user?.id || Date.now(),
         name: userName,
         email: userEmail,
-        phone: userPhone
+        phone: userPhone,
       };
 
-      const bookingData = {
+      onSubmit({
         sharing: selectedSharing,
-        user: bookingUser
-      };
-
-      onSubmit(bookingData);
+        user: bookingUser,
+      });
     };
 
     return (
@@ -322,41 +369,58 @@ const HostelPage = () => {
         <div className="booking-popup" onClick={(e) => e.stopPropagation()}>
           <div className="popup-header">
             <h3>Book {hostelData?.hostel_name}</h3>
-            <button className="close-popup" onClick={onClose}>×</button>
+            <button className="close-popup" onClick={onClose}>
+              ×
+            </button>
           </div>
 
-          <form className="booking-form" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              placeholder="Your Name"
-              required
-            />
+          <form onSubmit={handleSubmit} className="booking-form">
+            <div className="form-group">
+              <label>Name *</label>
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Enter your name"
+                required
+              />
+            </div>
 
-            <input
-              type="email"
-              value={userEmail}
-              onChange={(e) => setUserEmail(e.target.value)}
-              placeholder="Your Email"
-              required
-            />
+            <div className="form-group">
+              <label>Email *</label>
+              <input
+                type="email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+              />
+            </div>
 
-            <input
-              type="tel"
-              value={userPhone}
-              onChange={(e) => setUserPhone(e.target.value)}
-              placeholder="Phone Number"
-              required
-            />
+            <div className="form-group">
+              <label>Phone *</label>
+              <input
+                type="tel"
+                value={userPhone}
+                onChange={(e) => setUserPhone(e.target.value)}
+                placeholder="Enter your phone"
+                required
+              />
+            </div>
 
-            <label>Select Sharing Type:</label>
-            <select value={selectedSharing} onChange={(e) => setSelectedSharing(e.target.value)}>
-              <option value="single">1-Sharing</option>
-              <option value="double">2-Sharing</option>
-              <option value="triple">3-Sharing</option>
-              <option value="four">4-Sharing</option>
-            </select>
+            <div className="form-group">
+              <label>Sharing Type *</label>
+              <select
+                value={selectedSharing}
+                onChange={(e) => setSelectedSharing(e.target.value)}
+              >
+                {sharingOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="form-actions">
               <button type="button" className="cancel-btn" onClick={onClose}>
@@ -373,12 +437,13 @@ const HostelPage = () => {
     );
   };
 
-  // ===================== LOADING =====================
+  // ================= LOADING / ERROR =================
   if (loading) return <div className="loading">Loading hostel details...</div>;
   if (!hostelData) return <div className="error">No hostel found.</div>;
 
   return (
     <div className="hostel-page">
+      {/* MAIN SECTION */}
       <div className="hostel-main">
         {/* LEFT IMAGES */}
         <div className="hostel-images">
@@ -422,34 +487,46 @@ const HostelPage = () => {
           <p className="black-text">{hostelData.address}</p>
 
           <h3 className="black-text">Amenities</h3>
-
           <div className="furnished-icons">
             {hostelData.facilities?.wifi && (
-              <span><FaWifi /> Free WiFi</span>
+              <span>
+                <FaWifi /> Free WiFi
+              </span>
             )}
             {hostelData.facilities?.parking && (
-              <span><FaParking /> Parking</span>
+              <span>
+                <FaParking /> Parking
+              </span>
             )}
-            {hostelData.facilities?.fan && (
-              <span><FaFan /> Fan</span>
-            )}
-            {hostelData.facilities?.bed && (
-              <span><FaBed /> Bed</span>
+            {hostelData.facilities?.ac && (
+              <span>
+                <FaFan /> AC
+              </span>
             )}
             {hostelData.facilities?.tv && (
-              <span><FaTv /> TV</span>
+              <span>
+                <FaTv /> TV
+              </span>
             )}
             {hostelData.facilities?.geyser && (
-              <span><FaShower /> Hot Water</span>
+              <span>
+                <FaShower /> Hot Water
+              </span>
             )}
-            {hostelData.facilities?.clean && (
-              <span><FaBroom /> Cleaning</span>
+            {hostelData.facilities?.bed && (
+              <span>
+                <FaBed /> Bed
+              </span>
             )}
             {hostelData.facilities?.lights && (
-              <span><FaLightbulb /> Lights</span>
+              <span>
+                <FaLightbulb /> Lights
+              </span>
             )}
-            {hostelData.facilities?.cupboard && (
-              <span><FaDoorClosed /> Cupboard</span>
+            {hostelData.facilities?.clean && (
+              <span>
+                <FaBroom /> Cleaning
+              </span>
             )}
           </div>
 
@@ -466,10 +543,14 @@ const HostelPage = () => {
             </div>
 
             <div className="reviews-list">
-              {dummyReviews.map((review) => (
+              {dummyReviews.slice(0, 1).map((review) => (
                 <div key={review.id} className="review-item">
                   <div className="reviewer-info">
-                    <img src={review.avatar} alt={review.name} className="reviewer-avatar" />
+                    <img
+                      src={review.avatar}
+                      alt={review.name}
+                      className="reviewer-avatar"
+                    />
                     <div>
                       <h4 className="reviewer-name">{review.name}</h4>
                       <p className="review-date">{review.date}</p>
@@ -487,12 +568,12 @@ const HostelPage = () => {
         </div>
       </div>
 
-      {/* FOOD MENU */}
+      {/* FOOD MENU SECTION */}
       <div className="food-menu">
         <h2 className="black-text">Food Menu</h2>
 
         {menuLoading ? (
-          <p>Loading food menu...</p>
+          <div className="loading-food">Loading food menu...</div>
         ) : foodMenu.length > 0 ? (
           <table className="food-table">
             <thead>
@@ -506,20 +587,22 @@ const HostelPage = () => {
             <tbody>
               {foodMenu.map((day, idx) => (
                 <tr key={idx}>
-                  <td><b>{day.day}</b></td>
-                  <td>{day.breakfast || "-"}</td>
-                  <td>{day.lunch || "-"}</td>
-                  <td>{day.dinner || "-"}</td>
+                  <td>{day.day}</td>
+                  <td>{day.breakfast}</td>
+                  <td>{day.lunch}</td>
+                  <td>{day.dinner}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <p>No food menu available.</p>
+          <div className="no-food-menu">
+            <p>🍽️ No food menu available</p>
+          </div>
         )}
       </div>
 
-      {/* BOOK NOW */}
+      {/* BOOK NOW BUTTON */}
       <div className="book-now">
         <button className="book-now-btn" onClick={handleBookNow}>
           Book Now
