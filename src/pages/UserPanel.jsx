@@ -30,9 +30,6 @@ const UserPanel = ({ onSave, onLogout }) => {
   const [loading, setLoading] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState("");
 
-  const [bookedPGs, setBookedPGs] = useState([]);
-  const [loadingBookings, setLoadingBookings] = useState(false);
-
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -51,20 +48,21 @@ const UserPanel = ({ onSave, onLogout }) => {
 
   const navigate = useNavigate();
 
-  // ✅ Helper for image full url
+  // ✅ BACKEND URL (CHANGE IF NEEDED)
+  const BACKEND_URL = "https://hlopg.com";
+
+  // ✅ FIX IMAGE URL FUNCTION (IMPORTANT)
   const getFullImageUrl = (imagePath) => {
     if (!imagePath) return "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
 
     if (imagePath.startsWith("http")) return imagePath;
 
-    if (imagePath.startsWith("/uploads")) {
-      return `https://hlopg.com${imagePath}`;
-    }
+    if (imagePath.startsWith("/uploads")) return `${BACKEND_URL}${imagePath}`;
 
-    return `https://hlopg.com/uploads/${imagePath}`;
+    return `${BACKEND_URL}/uploads/${imagePath}`;
   };
 
-  // ✅ Fetch user
+  // ✅ FETCH USER DETAILS
   useEffect(() => {
     const verifyAndFetchUser = async () => {
       const token = localStorage.getItem("hlopgToken");
@@ -81,10 +79,13 @@ const UserPanel = ({ onSave, onLogout }) => {
         return;
       }
 
-      // ✅ Load user from localStorage first
+      // ✅ LOAD USER FROM LOCALSTORAGE
       if (userStr && userStr !== "undefined" && userStr !== "null") {
         try {
-          const userData = JSON.parse(userStr);
+          const parsed = JSON.parse(userStr);
+
+          // sometimes you stored wrong object in localstorage
+          const userData = parsed.data ? parsed.data : parsed;
 
           if (userData.profileImage) {
             userData.profileImage = getFullImageUrl(userData.profileImage);
@@ -98,7 +99,7 @@ const UserPanel = ({ onSave, onLogout }) => {
         }
       }
 
-      // ✅ If no local user, fetch from backend
+      // ✅ FETCH USER FROM BACKEND
       try {
         const userRes = await api.get("/auth/userid", {
           headers: { Authorization: `Bearer ${token}` },
@@ -114,19 +115,17 @@ const UserPanel = ({ onSave, onLogout }) => {
           setUser(userData);
           setDraftUser(userData);
 
-          // ✅ FIX: store ONLY userData
+          // ✅ STORE CORRECT DATA
           localStorage.setItem("hlopgUser", JSON.stringify(userData));
         }
-      } catch (fetchErr) {
-        console.log("⚠️ Couldn't fetch user from backend");
+      } catch (err) {
+        console.log("⚠️ User fetch failed:", err.message);
 
         const fallbackUser = {
           name: "User",
           email: "user@example.com",
           phone: "",
           gender: "",
-          userType: "USER",
-          profileImage: "https://cdn-icons-png.flaticon.com/512/4140/4140048.png",
         };
 
         setUser(fallbackUser);
@@ -137,33 +136,7 @@ const UserPanel = ({ onSave, onLogout }) => {
     verifyAndFetchUser();
   }, [navigate]);
 
-  // ✅ Fetch booked PGs
-  useEffect(() => {
-    const fetchBookedPGs = async () => {
-      const token = localStorage.getItem("hlopgToken");
-      if (!token) return;
-
-      try {
-        setLoadingBookings(true);
-
-        const res = await api.get("/booking/user-bookings", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.status === 200) {
-          setBookedPGs(res.data.bookings || []);
-        }
-      } catch (error) {
-        console.error("Failed to fetch booked PGs:", error);
-      } finally {
-        setLoadingBookings(false);
-      }
-    };
-
-    fetchBookedPGs();
-  }, []);
-
-  // ✅ Fetch liked hostels
+  // ✅ FETCH LIKED HOSTELS
   useEffect(() => {
     const fetchLikedHostels = async () => {
       const token = localStorage.getItem("hlopgToken");
@@ -177,32 +150,25 @@ const UserPanel = ({ onSave, onLogout }) => {
         });
 
         if (res.data.success && Array.isArray(res.data.data)) {
-          const processedLiked = res.data.data.map((hostel) => {
+          const processed = res.data.data.map((hostel) => {
             let displayImage = defaultPGImg;
 
-            if (hostel.img) {
-              displayImage = getFullImageUrl(hostel.img);
-            } else if (
-              hostel.images &&
-              Array.isArray(hostel.images) &&
-              hostel.images.length > 0
-            ) {
-              displayImage = getFullImageUrl(hostel.images[0]);
-            }
+            if (hostel.img) displayImage = getFullImageUrl(hostel.img);
+            else if (hostel.images?.length > 0) displayImage = getFullImageUrl(hostel.images[0]);
 
             return {
               ...hostel,
-              displayImage,
               id: hostel.hostel_id || hostel.id,
               name: hostel.hostel_name || hostel.name || "Unnamed Hostel",
               location: hostel.area || hostel.city || hostel.address || "Unknown Location",
               rating: hostel.rating || "N/A",
               price: hostel.price || hostel.rent || "N/A",
               pg_type: hostel.pg_type || "Hostel",
+              displayImage,
             };
           });
 
-          setLikedHostels(processedLiked);
+          setLikedHostels(processed);
         } else {
           setLikedHostels([]);
         }
@@ -219,19 +185,19 @@ const UserPanel = ({ onSave, onLogout }) => {
     }
   }, [activeSection]);
 
-  // ✅ FIXED PROFILE IMAGE UPLOAD
+  // ✅ PROFILE IMAGE UPLOAD FIXED
   const handleProfileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // ✅ Instant preview
-    const previewUrl = URL.createObjectURL(file);
+    const token = localStorage.getItem("hlopgToken");
 
+    // preview image immediately
+    const previewUrl = URL.createObjectURL(file);
     setDraftUser((prev) => ({ ...prev, profileImage: previewUrl }));
     setUser((prev) => ({ ...prev, profileImage: previewUrl }));
 
     try {
-      const token = localStorage.getItem("hlopgToken");
       const formData = new FormData();
       formData.append("profileImage", file);
 
@@ -245,74 +211,27 @@ const UserPanel = ({ onSave, onLogout }) => {
       if (res.data.success) {
         const updatedUser = res.data.data;
 
-        // ✅ Ensure correct full URL
         const finalImageUrl = getFullImageUrl(updatedUser.profileImage);
 
-        const finalUser = {
+        const mergedUser = {
           ...user,
           ...updatedUser,
           profileImage: finalImageUrl,
         };
 
-        setUser(finalUser);
-        setDraftUser(finalUser);
+        setUser(mergedUser);
+        setDraftUser(mergedUser);
 
-        // ✅ FIX: store finalUser properly
-        localStorage.setItem("hlopgUser", JSON.stringify(finalUser));
+        // ✅ SAVE CORRECT USER OBJECT
+        localStorage.setItem("hlopgUser", JSON.stringify(mergedUser));
 
-        setMessage("✅ Profile image updated!");
-        setTimeout(() => setMessage(""), 3000);
-      } else {
-        setMessage("❌ Upload failed");
+        setMessage("✅ Profile image updated successfully!");
         setTimeout(() => setMessage(""), 3000);
       }
     } catch (error) {
-      console.error("Upload failed:", error);
+      console.error("❌ Upload failed:", error);
       setMessage("❌ Upload failed");
       setTimeout(() => setMessage(""), 3000);
-    }
-  };
-
-  const handleUpdatePassword = async () => {
-    if (!passwords.current || !passwords.new || !passwords.confirm) {
-      setPasswordMsg("All fields are required");
-      return;
-    }
-
-    if (passwords.new !== passwords.confirm) {
-      setPasswordMsg("Passwords do not match");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setPasswordMsg("");
-
-      const token = localStorage.getItem("hlopgToken");
-
-      const res = await api.put(
-        "/auth/change-password",
-        {
-          currentPassword: passwords.current,
-          newPassword: passwords.new,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      setPasswordMsg(res.data.message || "Password updated successfully");
-
-      setTimeout(() => {
-        setPasswords({ current: "", new: "", confirm: "" });
-        setShowCurrent(false);
-        setShowNew(false);
-        setShowConfirm(false);
-      }, 500);
-    } catch (err) {
-      setPasswordMsg(err.response?.data?.message || "Failed to update password");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -343,7 +262,6 @@ const UserPanel = ({ onSave, onLogout }) => {
         setUser(updatedUser);
         setDraftUser(updatedUser);
 
-        // ✅ save into localstorage
         localStorage.setItem("hlopgUser", JSON.stringify(updatedUser));
 
         setAnimateSidebar(true);
@@ -351,12 +269,12 @@ const UserPanel = ({ onSave, onLogout }) => {
 
         if (onSave) onSave(updatedUser);
 
-        setMessage("Changes saved successfully!");
+        setMessage("✅ Changes saved successfully!");
         setTimeout(() => setMessage(""), 3000);
       }
     } catch (error) {
       console.error("Failed to update user info:", error);
-      setMessage("Failed to save changes");
+      setMessage("❌ Failed to save changes");
       setTimeout(() => setMessage(""), 3000);
     }
   };
@@ -373,7 +291,7 @@ const UserPanel = ({ onSave, onLogout }) => {
       const timer = setTimeout(() => setAnimateGreeting(false), 500);
       return () => clearTimeout(timer);
     }
-  }, [animateAnimateGreeting]);
+  }, [animateGreeting]);
 
   const openLogoutModal = () => {
     setShowLogoutModal(true);
@@ -426,6 +344,51 @@ const UserPanel = ({ onSave, onLogout }) => {
     });
   };
 
+  const handleUpdatePassword = async () => {
+    if (!passwords.current || !passwords.new || !passwords.confirm) {
+      setPasswordMsg("All fields are required");
+      return;
+    }
+
+    if (passwords.new !== passwords.confirm) {
+      setPasswordMsg("Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setPasswordMsg("");
+
+      const token = localStorage.getItem("hlopgToken");
+
+      const res = await api.put(
+        "/auth/change-password",
+        {
+          currentPassword: passwords.current,
+          newPassword: passwords.new,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setPasswordMsg(res.data.message || "Password updated successfully");
+
+      setTimeout(() => {
+        setPasswords({ current: "", new: "", confirm: "" });
+        setShowCurrent(false);
+        setShowNew(false);
+        setShowConfirm(false);
+      }, 500);
+    } catch (err) {
+      setPasswordMsg(err.response?.data?.message || "Failed to update password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case "basic-info":
@@ -436,12 +399,11 @@ const UserPanel = ({ onSave, onLogout }) => {
               <div className="profile">
                 <div className="profile-image">
                   <img
-                    src={getFullImageUrl(draftUser.profileImage || user.profileImage)}
+                    src={draftUser.profileImage || user.profileImage || "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"}
                     alt="Profile"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src =
-                        "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
+                      e.target.src = "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
                     }}
                   />
                 </div>
@@ -494,8 +456,11 @@ const UserPanel = ({ onSave, onLogout }) => {
         return (
           <>
             <h3>LIKED PG'S LIST</h3>
+
             {loadingLiked ? (
-              <p>Loading your liked hostels...</p>
+              <div className="loading-container">
+                <p>Loading your liked hostels...</p>
+              </div>
             ) : likedHostels.length > 0 ? (
               <div className="liked-pg-container">
                 {likedHostels.map((hostel) => (
@@ -511,10 +476,10 @@ const UserPanel = ({ onSave, onLogout }) => {
                         className="liked-pg-img"
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src =
-                            "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
+                          e.target.src = defaultPGImg;
                         }}
                       />
+
                       <div className="liked-heart-btn liked-active">
                         <FaHeart />
                       </div>
@@ -539,13 +504,79 @@ const UserPanel = ({ onSave, onLogout }) => {
             ) : (
               <div className="no-liked-hostels">
                 <p>You haven't liked any hostels yet.</p>
+                <p className="small-text">
+                  Like hostels by clicking the ❤️ icon on hostel cards.
+                </p>
+                <button className="browse-hostels-btn" onClick={() => navigate("/")}>
+                  Browse Hostels
+                </button>
               </div>
             )}
           </>
         );
 
+      case "payment-history":
+        return (
+          <>
+            <h3>PAYMENT HISTORY</h3>
+            <p>No payments yet.</p>
+          </>
+        );
+
+      case "change-password":
+        return (
+          <>
+            <h3>CHANGE PASSWORD</h3>
+            <div className="password-form">
+              {[
+                { label: "Current Password", field: "current", show: showCurrent, setShow: setShowCurrent },
+                { label: "New Password", field: "new", show: showNew, setShow: setShowNew },
+                { label: "Confirm Password", field: "confirm", show: showConfirm, setShow: setShowConfirm },
+              ].map((p, idx) => (
+                <div className="form-group password-group" key={idx}>
+                  <label>{p.label}</label>
+
+                  <div className="password-input-wrapper">
+                    <input
+                      type={p.show ? "text" : "password"}
+                      placeholder={`Enter ${p.label.toLowerCase()}`}
+                      value={passwords[p.field]}
+                      onChange={(e) => handlePasswordChange(p.field, e.target.value)}
+                      className={p.field === "confirm" && !confirmValid ? "invalid" : ""}
+                    />
+
+                    <span onClick={() => p.setShow(!p.show)}>
+                      {p.show ? <FaEyeSlash /> : <FaEye />}
+                    </span>
+                  </div>
+
+                  {p.field === "confirm" && !confirmValid && (
+                    <p className="confirm-error">Passwords do not match</p>
+                  )}
+                </div>
+              ))}
+
+              <button className="save-btn" onClick={handleUpdatePassword} disabled={loading}>
+                {loading ? "Updating..." : "Update Password"}
+              </button>
+
+              {passwordMsg && <p className="save-message">{passwordMsg}</p>}
+            </div>
+          </>
+        );
+
+      case "terms":
+        return (
+          <>
+            <h3>TERMS AND CONDITIONS</h3>
+            <div className="terms-box">
+              <p>Terms and conditions content here...</p>
+            </div>
+          </>
+        );
+
       default:
-        return <h3>Coming Soon...</h3>;
+        return null;
     }
   };
 
