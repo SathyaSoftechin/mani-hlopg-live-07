@@ -43,211 +43,232 @@ function Home() {
   const [selectedHostelId, setSelectedHostelId] = useState(null);
   const [authType, setAuthType] = useState("login");
 
-  /* ================= IMAGE HANDLER ================= */
+  /* ---------------- Image URL Helper (SAFE) ---------------- */
   const getFullImageUrl = (imagePath) => {
     if (!imagePath) return defaultPGImg;
     if (imagePath.startsWith("http")) return imagePath;
-    if (imagePath.startsWith("/uploads"))
+    if (imagePath.startsWith("/uploads")) {
       return `https://hlopg.com${imagePath}`;
+    }
     return `https://hlopg.com/uploads/${imagePath}`;
   };
 
-  /* ================= FETCH HOSTELS ================= */
+  /* ---------------- Fetch Hostels ---------------- */
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await api.get("/hostel/gethostels");
-        if (res.data?.success && Array.isArray(res.data.hostels)) {
-          setHostels(
-            res.data.hostels.map((h) => ({
+
+        if (res.data.success && Array.isArray(res.data.hostels)) {
+          const processed = res.data.hostels.map((h) => {
+            let imageUrl = defaultPGImg;
+
+            try {
+              if (Array.isArray(h.images) && h.images.length > 0) {
+                imageUrl = getFullImageUrl(h.images[0]);
+              } else if (typeof h.images === "string") {
+                const parsed = JSON.parse(h.images);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  imageUrl = getFullImageUrl(parsed[0]);
+                }
+              } else if (h.img) {
+                imageUrl = getFullImageUrl(h.img);
+              }
+            } catch {
+              imageUrl = defaultPGImg;
+            }
+
+            return {
               ...h,
               id: h.hostel_id || h.id,
-              displayImage: getFullImageUrl(h.images?.[0] || h.img),
-            }))
-          );
+              displayImage: imageUrl,
+            };
+          });
+
+          setHostels(processed);
         } else {
           setHostels([]);
         }
-      } catch {
+      } catch (err) {
+        console.error("Error fetching hostels:", err);
         setHostels([]);
       }
     };
+
     fetchData();
   }, []);
 
-  /* ================= LIKED HOSTELS ================= */
+  /* ---------------- Cities ---------------- */
+  const [cities, setCities] = useState([
+    { name: "Hostel's in Hyderabad", bg: hyderabadBg, pgList: [] },
+    { name: "Hostel's in Chennai", bg: chennaiBg, pgList: [] },
+    { name: "Hostel's in Mumbai", bg: mumbaiBg, pgList: [] },
+    { name: "Hostel's in Bangalore", bg: bangaloreBg, pgList: [] },
+  ]);
+
   useEffect(() => {
-    const fetchLiked = async () => {
-      try {
-        const token = localStorage.getItem("hlopgToken");
-        if (!token) return;
-        const res = await api.get("/hostel/liked-hostels", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.data?.success && Array.isArray(res.data.data)) {
-          setLikedPgIds(res.data.data.map((h) => h.hostel_id || h.id));
-        }
-      } catch {}
-    };
-    fetchLiked();
-  }, []);
+    if (!hostels.length) return;
 
-  /* ================= CITIES ================= */
-  const cities = [
-    { name: "Hyderabad", bg: hyderabadBg },
-    { name: "Delhi", bg: hyderabadBg },
-    { name: "Chennai", bg: chennaiBg },
-    { name: "Bangalore", bg: bangaloreBg },
-  ];
+    setCities((prev) =>
+      prev.map((city) => {
+        const cityKey =
+          city.name.match(/in (\w+)/i)?.[1]?.toLowerCase() || "";
 
-  const getFacilities = (data) => {
-    if (!data || typeof data !== "object") return [];
-    const map = {
-      wifi: { name: "WiFi", icon: <FaWifi /> },
-      parking: { name: "Parking", icon: <FaCar /> },
-      ac: { name: "AC", icon: <FaSnowflake /> },
-      fan: { name: "Fan", icon: <FaFan /> },
-      bed: { name: "Bed", icon: <FaBed /> },
-      food: { name: "Food", icon: <FaUtensils /> },
-      clean: { name: "Cleaning", icon: <FaBroom /> },
-      geyser: { name: "Hot Water", icon: <FaShower /> },
-      lights: { name: "Lights", icon: <FaLightbulb /> },
-      cupboard: { name: "Cupboard", icon: <FaChair /> },
-    };
-
-    return Object.entries(data)
-      .filter(([_, v]) => v)
-      .map(([k]) => map[k])
-      .filter(Boolean)
-      .slice(0, 6);
-  };
-
-  /* ================= LIKE ================= */
-  const toggleLike = async (pg, e) => {
-    e.stopPropagation();
-    const token = localStorage.getItem("hlopgToken");
-    if (!token) {
-      setSelectedHostelId(pg.id);
-      setShowAuthModal(true);
-      return;
-    }
-
-    try {
-      const res = await api.post(
-        "/hostel/like-hostel",
-        { hostel_id: pg.id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (res.data?.success) {
-        setLikedPgIds((prev) =>
-          res.data.liked
-            ? [...new Set([...prev, pg.id])]
-            : prev.filter((id) => id !== pg.id)
+        const filtered = hostels.filter(
+          (h) => h.city && h.city.toLowerCase().includes(cityKey)
         );
-      }
-    } catch {}
+
+        return {
+          ...city,
+          pgList: filtered.map((h) => ({
+            id: h.id,
+            img: h.displayImage,
+            name: h.hostel_name || "Unnamed Hostel",
+            location: h.area || h.city || "Unknown",
+            city: h.city,
+            rating: h.rating || 4.5,
+            sharing: "Multiple Sharing",
+            facilities: h.facilities || [],
+            pg_type: h.pg_type || "Hostel",
+          })),
+        };
+      })
+    );
+  }, [hostels]);
+
+  /* ---------------- Scroll Logic ---------------- */
+  const updateArrowVisibility = (index) => {
+    const el = pgRefs.current[index];
+    if (!el) return;
+
+    setArrowVisibility((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        left: el.scrollLeft > 0,
+        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+      };
+      return copy;
+    });
   };
 
-  /* ================= RENDER ================= */
+  const scrollPG = (index, dir) => {
+    const el = pgRefs.current[index];
+    if (!el) return;
+
+    el.scrollBy({
+      left: dir === "next" ? el.clientWidth : -el.clientWidth,
+      behavior: "smooth",
+    });
+
+    setTimeout(() => updateArrowVisibility(index), 300);
+  };
+
+  /* ---------------- Render ---------------- */
   return (
     <div className="home">
-      {/* ===== HERO ===== */}
+      {/* ===== App Popup ===== */}
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          authType={authType}
+        />
+      )}
+
+      {/* ===== Hero ===== */}
       <div className="hero">
         <div className="overlay">
           <h1 className="title">HloPG</h1>
           <p className="subtitle">
-            Finding a PG shouldn’t feel like a struggle
+            Because finding a PG shouldn't feel like a struggle.
           </p>
         </div>
       </div>
 
-      {/* ===== CITY SECTIONS ===== */}
-      {cities.map((city) => {
-        const cityHostels = hostels.filter((h) =>
-          h.city?.toLowerCase().includes(city.name.toLowerCase())
-        );
+      {/* ===== City Sections ===== */}
+      {cities.map((city, index) => (
+        <div key={index} className="city-section">
+          <div className="city-header">
+            <h2>{city.name.replace("Hostel's in ", "")}</h2>
+            {city.pgList.length > 0 && (
+              <div
+                className="know-more-btn"
+                onClick={() =>
+                  navigate(
+                    `/city/${city.name.match(/in (\w+)/i)?.[1].toLowerCase()}`
+                  )
+                }
+              >
+                See More...
+              </div>
+            )}
+          </div>
 
-        return (
-          <div key={city.name} className="city-section">
-            <div className="city-header">
-              <h2>{city.name}</h2>
-              {cityHostels.length > 0 && (
-                <span
-                  className="know-more-btn"
-                  onClick={() =>
-                    navigate(`/city/${city.name.toLowerCase()}`)
-                  }
-                >
-                  See More...
-                </span>
-              )}
-            </div>
+          {city.pgList.length > 0 && (
+            <div className="pg-container">
+              <button
+                className={`arrow left ${
+                  arrowVisibility[index]?.left ? "show" : "hide"
+                }`}
+                onClick={() => scrollPG(index, "prev")}
+              >
+                <FaChevronLeft />
+              </button>
 
-            <div className="pg-track">
-              {cityHostels.slice(0, 4).map((pg) => (
-                <div key={pg.id} className="home-pg-card">
-                  <div
-                    className="pg-card-click"
-                    onClick={() => navigate(`/hostel/${pg.id}`)}
-                  >
-                    <div className="pg-image">
-                      <img src={pg.displayImage} alt={pg.hostel_name} />
-                      <FaHeart
-                        className={`wishlists ${
-                          likedPgIds.includes(pg.id)
-                            ? "liked"
-                            : "unliked"
-                        }`}
-                        onClick={(e) => toggleLike(pg, e)}
-                      />
-                    </div>
+              <button
+                className={`arrow right ${
+                  arrowVisibility[index]?.right ? "show" : "hide"
+                }`}
+                onClick={() => scrollPG(index, "next")}
+              >
+                <FaChevronRight />
+              </button>
 
-                    <div className="pg-details">
-                      <div className="pg-header">
-                        <h3 className="pg-name">
-                          {pg.hostel_name || "PG"}
-                        </h3>
-                        <div className="pg-rating">
-                          <FaStar />
-                          <span>{pg.rating || 4.5}</span>
+              <div
+                className="pg-scroll"
+                ref={(el) => (pgRefs.current[index] = el)}
+                onScroll={() => updateArrowVisibility(index)}
+              >
+                <div className="pg-track">
+                  {city.pgList.map((pg) => (
+                    <div key={pg.id} className="home-pg-card">
+                      <div className="pg-image">
+                        <img
+                          src={pg.img}
+                          alt={pg.name}
+                          onError={(e) => {
+                            e.currentTarget.src = defaultPGImg;
+                          }}
+                        />
+                        <FaHeart className="wishlists unliked" />
+                      </div>
+
+                      <div className="pg-details">
+                        <div className="pg-header">
+                          <h3 className="pg-name">{pg.name}</h3>
+                          <div className="pg-rating">
+                            <FaStar className="star" />
+                            <span>{pg.rating}</span>
+                          </div>
+                        </div>
+
+                        <p className="pg-location">
+                          {pg.location}, {pg.city}
+                        </p>
+
+                        <div className="pg-type-badge">
+                          <FaHome />
+                          <span>{pg.pg_type} PG</span>
                         </div>
                       </div>
-
-                      <p className="pg-location">
-                        {pg.area || pg.city}
-                      </p>
-
-                      <div className="sharing-price-section">
-                        <FaUserFriends />
-                        <span>Multiple Sharing</span>
-                        <span className="price">
-                          ₹{pg.price || pg.rent || 8952}
-                        </span>
-                      </div>
-
-                      <div className="facilities-grid">
-                        {getFacilities(pg.facilities).map((f, i) => (
-                          <div key={i} className="facility-item">
-                            <span className="facility-icon">{f.icon}</span>
-                            <span className="facility-name">{f.name}</span>
-                          </div>
-                        ))}
-                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
-        );
-      })}
-
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        authType={authType}
-      />
+          )}
+        </div>
+      ))}
     </div>
   );
 }
