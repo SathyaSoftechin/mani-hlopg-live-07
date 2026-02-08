@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./UserDashboard.css";
+import "./UserPanel.css";
 import { FiLogOut } from "react-icons/fi";
 import { FaUserCircle, FaHeart, FaMoneyBillWave, FaLock } from "react-icons/fa";
 
