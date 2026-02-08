@@ -236,15 +236,15 @@ const forceUpdate = () => setForceUpdateFlag(!forceUpdateFlag);
           wifi: { name: "WiFi", icon: <FaWifi /> },
           parking: { name: "Parking", icon: <FaCar /> },
           ac: { name: "AC", icon: <FaSnowflake /> },
-          tv: { name: "TV", icon: <FaTv /> },
+          // tv: { name: "TV", icon: <FaTv /> },
           gym: { name: "Gym", icon: <FaDumbbell /> },
-          geyser: { name: "Hot Water", icon: <FaShower /> },
+          // geyser: { name: "Hot Water", icon: <FaShower /> },
           fan: { name: "Fan", icon: <FaFan /> },
           bed: { name: "Bed", icon: <FaBed /> },
           lights: { name: "Lights", icon: <FaLightbulb /> },
-          cupboard: { name: "Cupboard", icon: <FaChair /> },
+          // cupboard: { name: "Cupboard", icon: <FaChair /> },
           food: { name: "Food", icon: <FaUtensils /> },
-          water: { name: "24/7 Water", icon: <FaShower /> },
+          // water: { name: "24/7 Water", icon: <FaShower /> },
           clean: { name: "Cleaning", icon: <FaBroom /> }
         };
         
