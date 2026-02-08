@@ -6,6 +6,7 @@ html, body {
   height: auto !important;
   overflow-x: hidden;
   overflow-y: auto !important;
+  
 }
 
 /* Lock scroll when popup open */
