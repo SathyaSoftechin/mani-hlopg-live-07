@@ -6,10 +6,8 @@ import api from "../api";
 import pgDefaultImg from "../assets/pg1.png";
 import { FaStar, FaRegStar, FaStarHalfAlt, FaUser } from "react-icons/fa";
 
-const Dashboard = () => {
+const Dashboard = ({ user }) => {
   const token = localStorage.getItem("hlopgToken");
-
-  const [owner, setOwner] = useState(null);
 
   /* ================= STATES ================= */
   const [pgs, setPgs] = useState([]);
@@ -17,42 +15,16 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [recentComplaints, setRecentComplaints] = useState([]);
 
-  /* ================= GET OWNER FROM LOCAL STORAGE ================= */
-  useEffect(() => {
-    const ownerStr = localStorage.getItem("hlopgOwner");
-
-    if (ownerStr) {
-      try {
-        const parsedOwner = JSON.parse(ownerStr);
-        setOwner(parsedOwner);
-      } catch (e) {
-        console.log("⚠️ Owner parse error");
-      }
-    }
-  }, []);
-
   /* ================= FETCH MY PGs ================= */
   useEffect(() => {
     const fetchOwnerPGs = async () => {
       try {
-        setLoadingPGs(true);
-
-        if (!owner?.id) {
-          setLoadingPGs(false);
-          return;
-        }
-
-        console.log("🏠 Fetching PGs for ownerId:", owner.id);
-
-        // correct endpoint
-        const res = await api.get(`/hostel/owner/${owner.id}`, {
+        const res = await api.get("/hostel/owner/pgs", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log("✅ PG API Response:", res.data);
-
         if (res.data.success) {
-          const pgData = res.data.data || [];
+          const pgData = res.data.data || res.data.hostels || [];
 
           const processedPGs = pgData.map((pg) => {
             let displayImage = pgDefaultImg;
@@ -62,7 +34,7 @@ const Dashboard = () => {
 
               if (img.startsWith("http")) {
                 displayImage = img;
-              } else if (img.startsWith("/uploads")) {
+              } else if (img.startsWith("/")) {
                 displayImage = `https://hlopg.com${img}`;
               } else {
                 displayImage = `https://hlopg.com/uploads/${img}`;
@@ -70,7 +42,7 @@ const Dashboard = () => {
             } else if (pg.img) {
               if (pg.img.startsWith("http")) {
                 displayImage = pg.img;
-              } else if (pg.img.startsWith("/uploads")) {
+              } else if (pg.img.startsWith("/")) {
                 displayImage = `https://hlopg.com${pg.img}`;
               } else {
                 displayImage = `https://hlopg.com/uploads/${pg.img}`;
@@ -79,50 +51,42 @@ const Dashboard = () => {
 
             return {
               ...pg,
-              displayImage,
-              hostel_name: pg.hostel_name || pg.name || "My PG",
+              displayImage: displayImage,
+              hostel_name: pg.hostel_name || pg.name,
             };
           });
 
           setPgs(processedPGs);
-        } else {
-          setPgs([]);
         }
       } catch (err) {
-        console.error("❌ PG fetch failed", err);
-        setPgs([]);
+        console.error("PG fetch failed", err);
       } finally {
         setLoadingPGs(false);
       }
     };
 
-    if (token && owner?.id) {
+    if (token) {
       fetchOwnerPGs();
+    } else {
+      setLoadingPGs(false);
     }
-  }, [token, owner]);
+  }, [token]);
 
   /* ================= FETCH DASHBOARD DATA ================= */
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        console.log("📊 Fetching dashboard data...");
-
-        // FIXED URL (remove /api)
         const res = await api.get("/dashboard/owner", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log("✅ Dashboard response:", res.data);
-
         if (res.data.success) {
           setDashboardData(res.data.dashboard);
-        } else {
-          setDashboardData(null);
         }
       } catch (err) {
-        console.warn("⚠️ Dashboard API error:", err);
+        console.warn("Dashboard API error:", err);
 
-        // demo data fallback
+        // fallback sample data
         setDashboardData({
           totalBookings: 23,
           totalRevenue: 125000,
@@ -147,21 +111,15 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchRecentComplaints = async () => {
       try {
-        console.log("📢 Fetching complaints...");
-
         const res = await api.get("/complaints/owner", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log("✅ Complaints response:", res.data);
-
         if (res.data?.data && Array.isArray(res.data.data)) {
           setRecentComplaints(res.data.data.slice(0, 3));
-        } else {
-          setRecentComplaints([]);
         }
       } catch (err) {
-        console.warn("⚠️ Complaints fetch failed, using sample data");
+        console.warn("Complaints fetch failed, using sample data");
 
         setRecentComplaints([
           {
@@ -191,7 +149,7 @@ const Dashboard = () => {
     }
   }, [token]);
 
-  /* ================= RENDER STARS ================= */
+  /* ================= RENDER STARS (FIXED FUNCTION) ================= */
   const renderStars = (rating = 0) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -202,7 +160,7 @@ const Dashboard = () => {
     }
 
     if (hasHalfStar) {
-      stars.push(<FaStarHalfAlt key="half"} color="#FFD700" />);
+      stars.push(<FaStarHalfAlt key="half" color="#FFD700" />);
     }
 
     while (stars.length < 5) {
@@ -225,7 +183,7 @@ const Dashboard = () => {
     <div className="dashboard-container">
       {/* Greeting */}
       <h3 className="welcome-text">
-        Hi, <span className="highlight">{owner?.name || "Owner"}</span>. Welcome
+        Hi, <span className="highlight">{user?.name || "Owner"}</span>. Welcome
         to <span className="highlight">HloPG</span> Admin!
       </h3>
 
@@ -240,7 +198,7 @@ const Dashboard = () => {
         ) : (
           <div className="pg-cards-grid">
             {pgs.map((pg) => (
-              <div className="dashboard-pg-card" key={pg.id}>
+              <div className="dashboard-pg-card" key={pg.hostel_id || pg.id}>
                 <div className="pg-card-image">
                   <img
                     src={pg.displayImage}
@@ -309,13 +267,17 @@ const Dashboard = () => {
                     <div key={item.month} className="chart-bar-container">
                       <div
                         className="chart-bar revenue"
-                        style={{ height: `${(item.revenue / 150000) * 100}%` }}
+                        style={{
+                          height: `${(item.revenue / 150000) * 100}%`,
+                        }}
                         title={`Revenue: ₹${item.revenue.toLocaleString()}`}
                       ></div>
 
                       <div
                         className="chart-bar bookings"
-                        style={{ height: `${(item.bookings / 30) * 100}%` }}
+                        style={{
+                          height: `${(item.bookings / 30) * 100}%`,
+                        }}
                         title={`Bookings: ${item.bookings}`}
                       ></div>
                     </div>
@@ -329,6 +291,7 @@ const Dashboard = () => {
                 <div className="legend-color revenue"></div>
                 <span>Revenue</span>
               </div>
+
               <div className="legend-item">
                 <div className="legend-color bookings"></div>
                 <span>Bookings</span>
@@ -355,6 +318,7 @@ const Dashboard = () => {
                 <div className="complaint-content">
                   <div className="complaint-header">
                     <h5>{complaint.name}</h5>
+
                     <span
                       className={`status-badge ${complaint.status
                         ?.toLowerCase()
@@ -382,11 +346,13 @@ const Dashboard = () => {
               <div className="review-avatar">
                 <FaUser />
               </div>
+
               <div className="reviewer-info">
                 <h5>Sneha R.</h5>
                 {renderStars(4.5)}
               </div>
             </div>
+
             <p className="review-text">
               Great facilities and clean rooms. Staff is very cooperative.
             </p>
@@ -397,11 +363,13 @@ const Dashboard = () => {
               <div className="review-avatar">
                 <FaUser />
               </div>
+
               <div className="reviewer-info">
                 <h5>Mohit P.</h5>
                 {renderStars(4)}
               </div>
             </div>
+
             <p className="review-text">
               Good food quality and timely service. Happy with the stay.
             </p>
@@ -412,11 +380,13 @@ const Dashboard = () => {
               <div className="review-avatar">
                 <FaUser />
               </div>
+
               <div className="reviewer-info">
                 <h5>Kiran V.</h5>
                 {renderStars(4.2)}
               </div>
             </div>
+
             <p className="review-text">
               Comfortable stay at reasonable price. Would recommend to friends.
             </p>
