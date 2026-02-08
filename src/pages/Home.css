@@ -257,9 +257,70 @@ body.no-scroll {
   justify-content: center;
   align-items: center;
   z-index: 99999;
+}
 
-  /* 🔑 allow clicks to pass correctly */
-  pointer-events: auto;
+.app-popup-card {
+  position: relative;
+
+  /* ✅ Desktop size */
+  width: 420px;
+  max-width: 90%;
+
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 28px 26px;
+
+  text-align: center;
+  box-shadow: 0 35px 70px rgba(0, 0, 0, 0.35);
+  animation: popupScale 0.35s ease;
+
+  /* ✅ Proper layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.popup-app-img {
+  width: 110px;
+  height: auto;
+  display: block;
+  margin: 0 auto 6px auto;
+}
+
+.popup-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+
+  background: #f2f2f2;
+  font-size: 20px;
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+
+  z-index: 100000;
+}
+
+.popup-close:hover {
+  background: #e5e5e5;
+}
+
+.popup-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.popup-buttons img {
+  height: 44px;
+  width: auto;
 }
 
 /* ================= POPUP CARD ================= */
@@ -305,6 +366,22 @@ body.no-scroll {
 }
 
 /* ================= RESPONSIVE ================= */
+@media (max-width: 600px) {
+  .app-popup-card {
+    width: 92%;
+    padding: 22px 18px;
+    border-radius: 18px;
+  }
+
+  .popup-app-img {
+    width: 90px;
+  }
+
+  .popup-buttons img {
+    height: 40px;
+  }
+}
+
 @media (max-width: 768px) {
   .home-pg-card {
     min-width: 240px;
