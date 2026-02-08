@@ -1,1254 +1,793 @@
 
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
-import "./HostelPage.css";
+
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Home.css";
 import {
-  FaWifi,
-  FaFan,
+  FaHeart,
+  FaStar,
   FaBed,
-  FaTv,
-  FaLightbulb,
-  FaDoorClosed,
+  FaUtensils,
+  FaBroom,
+  FaShower,
   FaChevronLeft,
   FaChevronRight,
-  FaStar,
-  FaShower,
-  FaLock,
-  FaParking,
-  FaBroom,
-  FaStarHalfAlt,
-  FaRegStar
+  FaWifi,
+  FaCar,
+  FaTv,
+  FaSnowflake,
+  FaUserFriends,
+  FaHome,
+  FaKey,
+  FaDumbbell,
+  FaFan,
+  FaLightbulb,
+  FaChair,
 } from "react-icons/fa";
-import { MdOutlineSmokeFree, MdNoDrinks } from "react-icons/md";
-
 import api from "../api";
+import defaultPGImg from "../assets/pg1.jpg";
+import hyderabadBg from "../assets/hyderabad.png";
+import chennaiBg from "../assets/chennai.png";
+import mumbaiBg from "../assets/mumbai.png";
+import bangaloreBg from "../assets/bangalore.png";
+import logo from "../assets/logo.png";
+import AuthModal from "./AuthModal";
 
-// Fallback images
-import pg1 from "../assets/pg1.jpg";
-import pg2 from "../assets/pg2.jpg";
-import pg3 from "../assets/pg3.jpg";
-import pg4 from "../assets/pg4.jpg";
-import pg5 from "../assets/pg5.png";
+const PLAYSTORE_LINK = "https://play.google.com/";
+const APPSTORE_LINK = "https://www.apple.com/app-store/";
 
-/* ⭐ Render Star Ratings */
-const renderStars = (rating = 0) => {
-  const stars = [];
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 !== 0;
-
-  for (let i = 0; i < fullStars; i++) {
-    stars.push(<FaStar key={`full-${i}`} className="review-star" />);
-  }
-
-  if (hasHalfStar) {
-    stars.push(<FaStarHalfAlt key="half" className="review-star" />);
-  }
-
-  while (stars.length < 5) {
-    stars.push(
-      <FaRegStar key={`empty-${stars.length}`} className="review-star" />
-    );
-  }
-
-  return <div className="stars-container">{stars}</div>;
-};
-
-const HostelPage = () => {
-  const { hostelId } = useParams();
+function Home() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const pgRefs = useRef([]);
+  const [arrowVisibility, setArrowVisibility] = useState([]);
+  const [hostels, setHostels] = useState([]);
+  const [likedPgIds, setLikedPgIds] = useState([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [selectedHostelId, setSelectedHostelId] = useState(null);
+  const [authType, setAuthType] = useState("login"); // "login" or "signup"
 
-  const [hostelData, setHostelData] = useState(null);
-  const [foodMenu, setFoodMenu] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [menuLoading, setMenuLoading] = useState(true);
-  const [mainImageIndex, setMainImageIndex] = useState(0);
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
-  const [user, setUser] = useState(null);
-  const [bookingLoading, setBookingLoading] = useState(false);
+  const [forceUpdateFlag, setForceUpdateFlag] = useState(false);
+const forceUpdate = () => setForceUpdateFlag(!forceUpdateFlag);
 
-  const dummyReviews = [
-    {
-      id: 1,
-      name: "Rahul Sharma",
-      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-      rating: 4.5,
-      comment: "Great PG, clean facilities and friendly staff. Food quality is excellent!",
-      date: "2 weeks ago"
-    },
-    {
-      id: 2,
-      name: "Priya Patel",
-      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-      rating: 4.0,
-      comment: "Good location and well-maintained rooms. WiFi could be better though.",
-      date: "1 month ago"
-    },
-    {
-      id: 3,
-      name: "Amit Kumar",
-      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-      rating: 5.0,
-      comment: "Best PG in the area! Owner is very cooperative and helpful.",
-      date: "3 days ago"
-    },
-    {
-      id: 4,
-      name: "Sneha Reddy",
-      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-      rating: 3.5,
-      comment: "Affordable price but need more parking space.",
-      date: "2 months ago"
-    },
-    {
-      id: 5,
-      name: "Vikram Singh",
-      avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-      rating: 4.0,
-      comment: "Clean rooms and good food. Would recommend!",
-      date: "1 week ago"
+  /* ---------------- Fix Image URL Helper ---------------- */
+  const getFullImageUrl = (imagePath) => {
+    if (!imagePath) return defaultPGImg;
+    
+    if (imagePath.startsWith('http')) {
+      return imagePath;
     }
-  ];
+    
+    if (imagePath.startsWith('/uploads')) {
+      return `https://hlopg.com${imagePath}`;
+    }
+    
+    if (imagePath) {
+      return `https://hlopg.com/uploads/${imagePath}`;
+    }
+    
+    return defaultPGImg;
+  };
 
-  const avgRating = dummyReviews.reduce((sum, r) => sum + r.rating, 0) / dummyReviews.length;
-  const totalReviews = dummyReviews.length;
-
-  // Fetch hostel data
+  /* ---------------- Fetch Hostels ---------------- */
   useEffect(() => {
-    const fetchHostel = async () => {
+    const fetchData = async () => {
       try {
-        console.log("Fetching hostel with ID:", hostelId);
-        const res = await api.get(`/hostel/${hostelId}`);
-        console.log("Full API Response:", res.data);
-        console.log("Hostel Data:", res.data.data);
+        const res = await api.get("/hostel/gethostels");
+        console.log("Hostels response:", res.data);
         
-        if (res.data.success) {
-          const data = res.data.data;
+        if (res.data.success && Array.isArray(res.data.hostels)) {
+          const processedHostels = res.data.hostels.map(hostel => {
+            let images = [];
+            if (hostel.images && Array.isArray(hostel.images)) {
+              images = hostel.images.map(img => getFullImageUrl(img));
+            } else if (hostel.img) {
+              images = [getFullImageUrl(hostel.img)];
+            } else {
+              images = [defaultPGImg];
+            }
+            
+            return {
+              ...hostel,
+              images: images,
+              displayImage: images[0],
+              id: hostel.hostel_id || hostel.id
+            };
+          });
           
-          // Fix image URLs
-          if (data.images && Array.isArray(data.images)) {
-            // Process images to ensure they have full URLs
-            data.images = data.images.map(img => {
-              if (!img) return pg1;
-              if (img.startsWith('http')) return img;
-              if (img.startsWith('/uploads')) return `https://hlopg.com${img}`;
-              return `https://hlopg.com/uploads/${img}`;
-            });
-          } else if (data.img) {
-            // Fallback to single image
-            const mainImg = data.img.startsWith('http') ? data.img : 
-                           data.img.startsWith('/uploads') ? `https://hlopg.com${data.img}` :
-                           `https://hlopg.com/uploads/${data.img}`;
-            data.images = [mainImg];
-          } else {
-            data.images = [pg1, pg2, pg3, pg4, pg5];
-          }
-          
-          setHostelData(data);
+          setHostels(processedHostels);
         } else {
-          console.error("API returned error:", res.data.message);
+          setHostels([]);
         }
       } catch (err) {
-        console.error("Error fetching hostel:", err);
-        console.error("Error details:", err.response?.data);
-      } finally {
-        setLoading(false);
+        console.error("Error fetching hostels:", err);
+        setHostels([]);
       }
     };
-    fetchHostel();
-  }, [hostelId]);
+    fetchData();
+  }, []);
 
-  // Fetch food menu
+  /* ---------------- Fetch Liked Hostels ---------------- */
   useEffect(() => {
-    const fetchFoodMenu = async () => {
+    const fetchLiked = async () => {
       try {
-        console.log("🔄 Fetching food menu for hostel:", hostelId);
-        
-        if (!hostelId) {
-          console.log("⚠️ No hostel ID available");
-          setFoodMenu([]);
-          setMenuLoading(false);
+        const token = localStorage.getItem("hlopgToken");
+        if (!token) {
+          setLikedPgIds([]);
           return;
         }
 
-        // Try to fetch from API endpoints first
-        console.log("🌐 Trying to fetch food menu from API...");
+        const res = await api.get("/hostel/liked-hostels", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         
-        const endpoints = [
-          `/food_menu/${hostelId}`,
-          `/hostel/food_menu/${hostelId}`,
-          `/hostel/${hostelId}/food_menu`,
-          `/hostel/${hostelId}/menu`,
-          `/menu/${hostelId}`
-        ];
-        
-        let foodData = null;
-        let found = false;
-        
-        for (const endpoint of endpoints) {
-          try {
-            console.log(`🔍 Trying endpoint: ${endpoint}`);
-            const res = await api.get(endpoint);
-            console.log(`📡 Response from ${endpoint}:`, res.data);
-            
-            if (res.data.success || res.data.ok || res.data.data || res.data.menu) {
-              foodData = res.data.data || res.data.menu || res.data.food_menu || res.data;
-              console.log("✅ Food data found from API:", foodData);
-              found = true;
-              break;
-            }
-          } catch (err) {
-            console.log(`❌ Endpoint ${endpoint} failed:`, err.message);
-          }
-        }
-        
-        // If no API data found, check if it's in hostelData (which might be fetched later)
-        if (!found && hostelData?.food_menu) {
-          console.log("📦 Food menu found in hostel data:", hostelData.food_menu);
-          foodData = hostelData.food_menu;
-          found = true;
-        }
-        
-        if (found && foodData) {
-          processFoodData(foodData);
+        if (res.data.success && Array.isArray(res.data.data)) {
+          const likedIds = res.data.data.map(pg => pg.hostel_id || pg.id);
+          setLikedPgIds(likedIds);
         } else {
-          console.log("⚠️ No food menu data found");
-          setFoodMenu([]);
+          setLikedPgIds([]);
         }
-        
       } catch (err) {
-        console.error("❌ Error in fetchFoodMenu:", err);
-        console.error("Error response:", err.response?.data);
-        setFoodMenu([]);
-      } finally {
-        setMenuLoading(false);
+        console.error("Error fetching liked hostels:", err);
+        setLikedPgIds([]);
       }
     };
+    fetchLiked();
+  }, []);
+
+  /* ---------------- Cities ---------------- */
+  const [cities, setCities] = useState([
+    { name: "Hostel's in Hyderabad", bg: hyderabadBg, pgList: [] },
+    { name: "Hostel's in Chennai", bg: chennaiBg, pgList: [] },
+    { name: "Hostel's in Mumbai", bg: mumbaiBg, pgList: [] },
+    { name: "Hostel's in Bangalore", bg: bangaloreBg, pgList: [] },
+    { name: "Hostel's in Vizag", bg: bangaloreBg, pgList: [] },
+  ]);
+
+  useEffect(() => {
+    if (hostels.length > 0) {
+      setCities((prevCities) =>
+        prevCities.map((city) => {
+          const cityName = city.name.match(/in (\w+)/i)?.[1]?.toLowerCase() || "";
+          
+          const filtered = hostels.filter((h) => {
+            if (!h.city) return false;
+            return h.city.toLowerCase().includes(cityName) || 
+                   cityName.includes(h.city.toLowerCase());
+          });
+          
+          return {
+            ...city,
+            pgList: filtered.map((h) => ({
+              // Basic Info
+              id: h.hostel_id || h.id,
+              img: h.displayImage || defaultPGImg,
+              name: h.hostel_name || h.name || "Unnamed Hostel",
+              location: h.area || h.city || h.address || "Unknown Location",
+              rating: h.rating || 4.5,
+              price: h.price ? `₹${h.price}` : h.rent ? `₹${h.rent}` : "₹5000",
+              
+              // Full data for details
+              fullHostelData: h,
+              
+              // Sharing Information
+              sharing: getSharingDisplay(h.sharing_data),
+              
+              // Facilities (extracted from JSON)
+              facilities: getFacilitiesList(h.facilities),
+              
+              // Additional Details
+              description: h.description || "",
+              pg_type: h.pg_type || "Hostel",
+              status: h.status || "ACTIVE",
+              city: h.city,
+              pincode: h.pincode,
+              state: h.state,
+              rules: h.rules ? parseRules(h.rules) : [],
+              food_menu: h.food_menu || {}
+            })),
+          };
+        })
+      );
+    }
+  }, [hostels]);
+
+  /* ---------------- Helper: Get Sharing Display ---------------- */
+  const getSharingDisplay = (sharingData) => {
+    if (!sharingData) return "Not specified";
     
-    // Helper function to process food data
-    const processFoodData = (foodData) => {
-      console.log("🔧 Processing food data:", foodData);
+    try {
+      const sharing = typeof sharingData === 'string' 
+        ? JSON.parse(sharingData) 
+        : sharingData;
       
+      if (typeof sharing === 'object' && sharing !== null) {
+        const entries = Object.entries(sharing);
+        if (entries.length > 0) {
+          return entries.map(([type, price]) => {
+            const typeText = type === 'single' ? '1-Sharing' : 
+                            type === 'double' ? '2-Sharing' : 
+                            type === 'triple' ? '3-Sharing' : 
+                            type === 'four' ? '4-Sharing' : 
+                            type === 'five' ? '5-Sharing' : 
+                            type === 'six' ? '6-Sharing' : 
+                            `${type}-Sharing`;
+            return `${typeText} - ₹${price}`;
+          }).join(', ');
+        }
+      }
+    } catch (e) {
+      console.log("Error parsing sharing data:", e);
+    }
+    return "Multiple Sharing Options";
+  };
+
+  /* ---------------- Helper: Get Facilities List ---------------- */
+  const getFacilitiesList = (facilitiesData) => {
+    const facilities = [];
+    
+    if (facilitiesData) {
       try {
-        let processedMenu = [];
+        const facilitiesObj = typeof facilitiesData === 'string' 
+          ? JSON.parse(facilitiesData) 
+          : facilitiesData;
         
-        // Parse if it's a string
-        if (typeof foodData === 'string') {
-          try {
-            foodData = JSON.parse(foodData);
-            console.log("✅ Parsed food menu JSON:", foodData);
-          } catch (parseError) {
-            console.error("❌ Failed to parse food menu JSON:", parseError);
-            setFoodMenu([]);
-            return;
+        // Map backend keys to display names
+        const facilityMap = {
+          wifi: { name: "WiFi", icon: <FaWifi /> },
+          parking: { name: "Parking", icon: <FaCar /> },
+          ac: { name: "AC", icon: <FaSnowflake /> },
+          // tv: { name: "TV", icon: <FaTv /> },
+          gym: { name: "Gym", icon: <FaDumbbell /> },
+          // geyser: { name: "Hot Water", icon: <FaShower /> },
+          fan: { name: "Fan", icon: <FaFan /> },
+          bed: { name: "Bed", icon: <FaBed /> },
+          lights: { name: "Lights", icon: <FaLightbulb /> },
+          // cupboard: { name: "Cupboard", icon: <FaChair /> },
+          food: { name: "Food", icon: <FaUtensils /> },
+          // water: { name: "24/7 Water", icon: <FaShower /> },
+          clean: { name: "Cleaning", icon: <FaBroom /> }
+        };
+        
+        Object.entries(facilitiesObj).forEach(([key, value]) => {
+          if (value && facilityMap[key]) {
+            facilities.push(facilityMap[key]);
+          }
+        });
+      } catch (e) {
+        console.log("Error parsing facilities:", e);
+      }
+    }
+    
+    // Add default facilities if none found
+    if (facilities.length === 0) {
+      facilities.push(
+        { name: "Beds", icon: <FaBed /> },
+        { name: "Food", icon: <FaUtensils /> },
+        { name: "Clean", icon: <FaBroom /> },
+        { name: "Wash", icon: <FaShower /> }
+      );
+    }
+    
+    return facilities.slice(0, 6); // Max 6 facilities for display
+  };
+
+  /* ---------------- Helper: Parse Rules ---------------- */
+  const parseRules = (rulesData) => {
+    if (!rulesData) return [];
+    
+    try {
+      if (typeof rulesData === 'string') {
+        return JSON.parse(rulesData);
+      }
+      return rulesData;
+    } catch (e) {
+      return [];
+    }
+  };
+
+  /* ---------------- Helper: Get Facility Icon ---------------- */
+  const getFacilityIcon = (facility) => {
+    const iconMap = {
+      WiFi: <FaWifi />,
+      Parking: <FaCar />,
+      AC: <FaSnowflake />,
+      TV: <FaTv />,
+      Gym: <FaDumbbell />,
+      "Hot Water": <FaShower />,
+      Fan: <FaFan />,
+      Bed: <FaBed />,
+      Beds: <FaBed />,
+      Lights: <FaLightbulb />,
+      Cupboard: <FaChair />,
+      Food: <FaUtensils />,
+      "24/7 Water": <FaShower />,
+      Cleaning: <FaBroom />,
+      Clean: <FaBroom />,
+      Wash: <FaShower />,
+    };
+    return iconMap[facility.name || facility] || <FaHome />;
+  };
+
+  /* ---------------- Hero Background Rotation ---------------- */
+  const [currentBg, setCurrentBg] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBg((prev) => (prev + 1) % cities.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [cities.length]);
+
+  /* ---------------- Scroll Arrows ---------------- */
+  const updateArrowVisibility = (cityIndex) => {
+    const container = pgRefs.current[cityIndex];
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    setArrowVisibility((prev) => {
+      const next = [...prev];
+      next[cityIndex] = {
+        left: scrollLeft > 0,
+        right: scrollLeft + clientWidth < scrollWidth - 1,
+      };
+      return next;
+    });
+  };
+
+  const scrollPG = (cityIndex, direction) => {
+    const container = pgRefs.current[cityIndex];
+    if (!container) return;
+
+    const scrollAmount = container.clientWidth;
+    container.scrollBy({
+      left: direction === "next" ? scrollAmount : -scrollAmount,
+      behavior: "smooth",
+    });
+
+    setTimeout(() => updateArrowVisibility(cityIndex), 300);
+  };
+
+  useEffect(() => {
+    cities.forEach((_, i) => updateArrowVisibility(i));
+  }, [cities]);
+
+  /* ---------------- Like/Unlike Hostel ---------------- */
+/* ---------------- Like/Unlike Hostel ---------------- */
+const toggleLike = async (pg, e) => {
+  e.stopPropagation();
+  
+  try {
+    const token = localStorage.getItem("hlopgToken");
+    if (!token) {
+      // Open auth modal instead of redirecting immediately
+      setSelectedHostelId(pg.id);
+      setAuthType("login");
+      setShowAuthModal(true);
+      return;
+    }
+
+    console.log("🎯 Toggling like for hostel ID:", pg.id);
+    console.log("💖 Current liked IDs before:", likedPgIds);
+    
+    const res = await api.post("/hostel/like-hostel", {
+      hostel_id: pg.id,
+    }, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log("📥 API response:", res.data);
+    
+    if (res.data.success) {
+      // Update liked list immediately for responsive UI
+      if (res.data.liked === true) {
+        // Add to liked list
+        setLikedPgIds(prev => {
+          if (!prev.includes(pg.id)) {
+            const newLiked = [...prev, pg.id];
+            console.log("✅ Added to liked list:", newLiked);
+            
+            // Update localStorage for UserPanel sync
+            updateLocalStorageLiked(pg.id, true);
+            
+            return newLiked;
+          }
+          return prev;
+        });
+      } else {
+        // Remove from liked list
+        setLikedPgIds(prev => {
+          const newLiked = prev.filter(id => id !== pg.id);
+          console.log("✅ Removed from liked list:", newLiked);
+          
+          // Update localStorage for UserPanel sync
+          updateLocalStorageLiked(pg.id, false);
+          
+          return newLiked;
+        });
+      }
+      
+      // No alert message - just update the UI silently
+      // You can optionally show a small toast notification instead
+    }
+  } catch (err) {
+    console.error("❌ Error liking hostel:", err);
+    // Optional: Show error toast instead of alert
+    // alert("Failed to update like status. Please try again.");
+  }
+};
+
+// Helper function to update localStorage for UserPanel sync
+const updateLocalStorageLiked = (hostelId, liked) => {
+  try {
+    // Get current liked hostels from localStorage
+    const likedStr = localStorage.getItem('hlopgLikedHostels');
+    let likedHostels = likedStr ? JSON.parse(likedStr) : [];
+    
+    if (liked) {
+      // Add if not already in list
+      if (!likedHostels.includes(hostelId)) {
+        likedHostels.push(hostelId);
+      }
+    } else {
+      // Remove from list
+      likedHostels = likedHostels.filter(id => id !== hostelId);
+    }
+    
+    // Save back to localStorage
+    localStorage.setItem('hlopgLikedHostels', JSON.stringify(likedHostels));
+    console.log("💾 Updated localStorage liked hostels:", likedHostels);
+  } catch (error) {
+    console.error("Error updating localStorage:", error);
+  }
+};
+
+  /* ---------------- APP DOWNLOAD POPUP ---------------- */
+  const [showPopup, setShowPopup] = useState(false);
+  const scrollPosRef = useRef(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollPosRef.current = window.scrollY;
+      document.body.classList.add("no-scroll");
+      setShowPopup(true);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const closePopup = () => {
+    setShowPopup(false);
+    document.body.classList.remove("no-scroll");
+    window.scrollTo(0, scrollPosRef.current);
+  };
+
+  const handleLikeToggle = async (hostelId, isCurrentlyLiked) => {
+  try {
+    const token = localStorage.getItem("hlopgToken");
+    if (!token) {
+      navigate("/StudentLogin");
+      return;
+    }
+
+    console.log("🎯 Toggling like for hostel ID:", hostelId);
+    console.log("💖 Current liked IDs before:", likedHostelIds);
+
+    const res = await api.post(
+      "/hostel/like-hostel",
+      { hostelId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    console.log("📥 API response:", res.data);
+
+    if (res.data.success) {
+      let updatedLikedIds;
+      
+      if (res.data.liked === false) {
+        // Unlike
+        updatedLikedIds = likedHostelIds.filter(id => id !== hostelId);
+        console.log("👎 Removed from liked list:", updatedLikedIds);
+      } else {
+        // Like
+        updatedLikedIds = [...likedHostelIds, hostelId];
+        console.log("👍 Added to liked list:", updatedLikedIds);
+      }
+
+      setLikedHostelIds(updatedLikedIds);
+      localStorage.setItem("hlopgLikedHostels", JSON.stringify(updatedLikedIds));
+      
+      // Force re-render to update heart colors immediately
+      forceUpdate();
+    }
+  } catch (err) {
+    console.error("❌ Error toggling like:", err);
+  }
+};
+
+  const handlePgCardClick = (pg) => {
+    // Check if user is logged in
+    const token = localStorage.getItem("hlopgToken");
+    
+    if (!token) {
+      // Show auth modal instead of navigating directly
+      setSelectedHostelId(pg.id);
+      setAuthType("login"); // Default to login
+      setShowAuthModal(true);
+    } else {
+      // User is logged in, navigate directly
+      navigate(`/hostel/${pg.id}`);
+    }
+  };
+
+  // Handle successful login
+  // Handle successful login
+const handleAuthSuccess = () => {
+  // If user logged in to like a hostel
+  if (selectedHostelId) {
+    // Try to like the hostel automatically after login
+    const likeHostelAfterLogin = async () => {
+      try {
+        const token = localStorage.getItem("hlopgToken");
+        if (token) {
+          const res = await api.post("/hostel/like-hostel", {
+            hostel_id: selectedHostelId,
+          }, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (res.data.success && res.data.liked) {
+            // Add to liked list
+            setLikedPgIds(prev => {
+              if (!prev.includes(selectedHostelId)) {
+                return [...prev, selectedHostelId];
+              }
+              return prev;
+            });
+            updateLocalStorageLiked(selectedHostelId, true);
           }
         }
-        
-        // Case 1: Object with breakfast, lunch, dinner properties
-        if (foodData.breakfast || foodData.lunch || foodData.dinner) {
-          const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-          
-          processedMenu = days.map(day => ({
-            day: day.charAt(0).toUpperCase() + day.slice(1),
-            breakfast: foodData.breakfast?.[day] || foodData.breakfast?.[day.toUpperCase()] || foodData.breakfast || "-",
-            lunch: foodData.lunch?.[day] || foodData.lunch?.[day.toUpperCase()] || foodData.lunch || "-",
-            dinner: foodData.dinner?.[day] || foodData.dinner?.[day.toUpperCase()] || foodData.dinner || "-"
-          }));
-          
-          console.log("📅 Processed weekly menu:", processedMenu);
-        }
-        // Case 2: Array format
-        else if (Array.isArray(foodData)) {
-          processedMenu = foodData.map(item => ({
-            day: item.day || item.Day || "Day " + (item.id || ""),
-            breakfast: item.breakfast || item.Breakfast || "-",
-            lunch: item.lunch || item.Lunch || "-",
-            dinner: item.dinner || item.Dinner || "-"
-          }));
-          
-          console.log("📅 Processed array menu:", processedMenu);
-        }
-        // Case 3: Object with day keys
-        else if (typeof foodData === 'object' && foodData !== null) {
-          processedMenu = Object.entries(foodData).map(([day, menu]) => ({
-            day: day.charAt(0).toUpperCase() + day.slice(1),
-            breakfast: menu.breakfast || menu.Breakfast || "-",
-            lunch: menu.lunch || menu.Lunch || "-",
-            dinner: menu.dinner || menu.Dinner || "-"
-          }));
-          
-          console.log("📅 Processed object menu:", processedMenu);
-        }
-        else {
-          console.log("⚠️ Unknown food data format:", foodData);
-          processedMenu = [];
-        }
-        
-        setFoodMenu(processedMenu);
-        
       } catch (error) {
-        console.error("❌ Error processing food data:", error);
-        setFoodMenu([]);
+        console.error("Error liking after login:", error);
       }
     };
     
-    // Only fetch when we have hostelId
-    if (hostelId) {
-      console.log("🚀 Starting food menu fetch...");
-      fetchFoodMenu();
-    }
-  }, [hostelId]);
-
-  // Image carousel
-  const images = hostelData?.images?.length
-    ? hostelData.images
-    : [pg1, pg2, pg3, pg4, pg5];
-  const prevImage = () =>
-    setMainImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  const nextImage = () =>
-    setMainImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-
-  
-  
-// // Update your handleCreateBooking function:
-// const handleCreateBooking = async (bookingData) => {
-//   try {
-//     console.log("🚀 Starting booking process...");
-//     console.log("📦 Booking data:", bookingData);
+    likeHostelAfterLogin();
     
-//     setBookingLoading(true);
-//     const token = localStorage.getItem("hlopgToken");
-
-//     if (!bookingData.user) {
-//       alert("Please provide your information");
-//       return;
-//     }
-
-//     const currentUser = bookingData.user;
-//     console.log("👤 Current user for booking:", currentUser);
-
-//     // Prepare booking payload
-//     const bookingPayload = {
-//       hostel_id: hostelId,
-//       user_name: currentUser.name,
-//       user_email: currentUser.email,
-//       user_phone: currentUser.phone || "Not provided",
-//       sharing_type: bookingData.sharing,
-//       booking_date: new Date().toISOString()
-//     };
-
-//     console.log("📤 Sending booking payload:", bookingPayload);
-
-//     try {
-//       // Send booking request
-//       const bookingRes = await api.post("/booking/request", bookingPayload, {
-//         headers: { 
-//           Authorization: `Bearer ${token}`,
-//           'Content-Type': 'application/json'
-//         }
-//       });
-
-//       console.log("✅ Booking API response:", bookingRes.data);
-
-//       if (bookingRes.data.success) {
-//         const bookingId = bookingRes.data.booking_id || "BR-" + Date.now();
-        
-//         // IMPORTANT: Show success alert with owner contact message
-//         const successMessage = 
-//           `✅ Booking Request Sent Successfully!\n\n` +
-//           `📋 Booking ID: ${bookingId}\n` +
-//           `🏠 PG: ${hostelData.hostel_name}\n` +
-//           `📍 Location: ${hostelData.address || `${hostelData.area}, ${hostelData.city}`}\n` +
-//           `👤 Your Details:\n` +
-//           `   • Name: ${currentUser.name}\n` +
-//           `   • Email: ${currentUser.email}\n` +
-//           `   • Phone: ${currentUser.phone || 'Not provided'}\n` +
-//           `🛏️ Sharing Type: ${bookingData.sharing}\n\n` +
-//           `📞 **The PG owner has been notified and will contact you shortly.**\n` +
-//           `📱 Please keep your phone accessible.\n` +
-//           `⏰ They will call you within 24 hours.\n\n` +
-//           `Thank you for choosing HloPG!`;
-        
-//         console.log("💬 Showing success alert...");
-        
-//         // THIS IS THE ALERT THAT SHOULD APPEAR
-//         alert(successMessage);
-        
-//         // Save user data
-//         localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
-        
-//         // Close popup
-//         console.log("❌ Closing popup...");
-//         setIsPopupOpen(false);
-        
-//       } else {
-//         alert(`Booking failed: ${bookingRes.data.message || "Unknown error"}`);
-//       }
-
-//     } catch (bookingErr) {
-//       console.error("❌ Booking API error:", bookingErr);
-      
-//       // Fallback success message (in case API fails but we want to show something)
-//       const fallbackMessage = 
-//         `📝 Booking Request Recorded!\n\n` +
-//         `PG: ${hostelData.hostel_name}\n` +
-//         `Location: ${hostelData.address || `${hostelData.area}, ${hostelData.city}`}\n\n` +
-//         `Your Details:\n` +
-//         `• Name: ${currentUser.name}\n` +
-//         `• Email: ${currentUser.email}\n` +
-//         `• Phone: ${currentUser.phone || 'Not provided'}\n\n` +
-//         `📞 **The PG owner will contact you at the provided number.**\n` +
-//         `⏰ Expected within 24 hours.\n\n` +
-//         `If no contact, please call: 1800-123-4567`;
-      
-//       alert(fallbackMessage);
-      
-//       // Save user data anyway
-//       localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
-      
-//       setIsPopupOpen(false);
-//     }
-
-//   } catch (err) {
-//     console.error("❌ Unexpected error:", err);
-//     alert("Something went wrong. Please try again or contact support.");
-//   } finally {
-//     console.log("🏁 Booking process completed");
-//     setBookingLoading(false);
-//   }
-// };
-
-const handleCreateBooking = async (bookingData) => {
-  try {
-    console.log("🚀 Starting booking process...");
-    console.log("📦 Booking data:", bookingData);
-    
-    setBookingLoading(true);
-    const token = localStorage.getItem("hlopgToken");
-
-    if (!bookingData.user) {
-      alert("Please provide your information");
-      return;
-    }
-
-    const currentUser = bookingData.user;
-    console.log("👤 Current user for booking:", currentUser);
-
-    // Get hostel details
-    if (!hostelData) {
-      alert("Hostel information not available");
-      return;
-    }
-
-    // Prepare booking payload matching backend expectations
-    const bookingPayload = {
-      hostel_id: parseInt(hostelId), // Ensure it's a number
-      user_name: currentUser.name || "Guest",
-      user_email: currentUser.email || "",
-      user_phone: currentUser.phone || "",
-      sharing_type: bookingData.sharing || "single",
-      // Add missing fields that backend might expect
-      booking_date: new Date().toISOString().split('T')[0] // Format as YYYY-MM-DD
-    };
-
-    console.log("📤 Sending booking payload:", bookingPayload);
-
-    try {
-      // Send booking request
-      const bookingRes = await api.post("/booking/request", bookingPayload, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log("✅ Booking API response:", bookingRes.data);
-
-      if (bookingRes.data.success) {
-        const bookingId = bookingRes.data.booking_id || `BR-${Date.now()}`;
-        
-        // IMPORTANT: Show success alert with owner contact message
-        const successMessage = 
-          `✅ Booking Request Sent Successfully!\n\n` +
-          `📋 Booking ID: ${bookingId}\n` +
-          `🏠 PG: ${hostelData.hostel_name}\n` +
-          `📍 Location: ${hostelData.address || `${hostelData.area}, ${hostelData.city}`}\n` +
-          `👤 Your Details:\n` +
-          `   • Name: ${currentUser.name}\n` +
-          `   • Email: ${currentUser.email}\n` +
-          `   • Phone: ${currentUser.phone || 'Not provided'}\n` +
-          `🛏️ Sharing Type: ${bookingData.sharing}\n\n` +
-          `📞 **The PG owner has been notified and will contact you shortly.**\n` +
-          `📱 Please keep your phone accessible.\n` +
-          `⏰ They will call you within 24 hours.\n\n` +
-          `Thank you for choosing HloPG!`;
-        
-        console.log("💬 Showing success alert...");
-        
-        // THIS IS THE ALERT THAT SHOULD APPEAR
-        alert(successMessage);
-        
-        // Save user data
-        localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
-        
-        // Close popup
-        console.log("❌ Closing popup...");
-        setIsPopupOpen(false);
-        
-      } else {
-        alert(`Booking failed: ${bookingRes.data.message || "Unknown error"}`);
-      }
-
-    } catch (bookingErr) {
-      console.error("❌ Booking API error:", bookingErr);
-      console.error("Error details:", bookingErr.response?.data);
-      
-      // Check for specific validation errors
-      if (bookingErr.response?.status === 400) {
-        const errorMsg = bookingErr.response?.data?.message || 
-                        "Invalid booking data. Please check your information.";
-        alert(`Booking Error: ${errorMsg}`);
-      } else {
-        // Fallback success message (in case API fails but we want to show something)
-        const fallbackMessage = 
-          `📝 Booking Request Recorded!\n\n` +
-          `PG: ${hostelData.hostel_name}\n` +
-          `Location: ${hostelData.address || `${hostelData.area}, ${hostelData.city}`}\n\n` +
-          `Your Details:\n` +
-          `• Name: ${currentUser.name}\n` +
-          `• Email: ${currentUser.email}\n` +
-          `• Phone: ${currentUser.phone || 'Not provided'}\n\n` +
-          `📞 **The PG owner will contact you at the provided number.**\n` +
-          `⏰ Expected within 24 hours.\n\n` +
-          `If no contact, please call: 1800-123-4567`;
-        
-        alert(fallbackMessage);
-        
-        // Save user data anyway
-        localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
-        
-        setIsPopupOpen(false);
-      }
-    }
-
-  } catch (err) {
-    console.error("❌ Unexpected error:", err);
-    alert("Something went wrong. Please try again or contact support.");
-  } finally {
-    console.log("🏁 Booking process completed");
-    setBookingLoading(false);
+    // Navigate to the hostel page after successful login
+    navigate(`/hostel/${selectedHostelId}`);
   }
+  
+  // Reset states
+  setSelectedHostelId(null);
+  setShowAuthModal(false);
 };
 
-  // Create notification for owner
-const createOwnerNotification = async (bookingData) => {
-  try {
-    const token = localStorage.getItem("hlopgToken");
-    
-    const notificationPayload = {
-      type: "booking_request",
-      title: "New Booking Request",
-      message: `${bookingData.user_name} wants to book ${bookingData.hostel_name}`,
-      hostel_id: hostelId,
-      hostel_name: bookingData.hostel_name,
-      hostel_address: bookingData.hostel_address,
-      user_id: bookingData.user_id,
-      user_name: bookingData.user_name,
-      user_email: bookingData.user_email,
-      user_phone: bookingData.user_phone,
-      sharing_type: bookingData.sharing_type,
-      booking_date: bookingData.booking_date
-    };
-
-    console.log("Creating notification:", notificationPayload);
-
-    // Send notification to backend
-    await api.post("/notifications/create", notificationPayload, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    console.log("✅ Notification created successfully");
-  } catch (notifErr) {
-    console.error("Notification creation error:", notifErr);
-    // Continue even if notification fails
-  }
-};
-  // Book Now Button
-  // const handleBookNow = async () => {
-  //   try {
-  //     const token = localStorage.getItem("hlopgToken");
-  //     const owner = localStorage.getItem("hlopgOwner");
-
-  //     if (owner) {
-  //       alert("You are logged in as Hostel Owner. Not authorized to book.");
-  //       return;
-  //     }
-
-  //     if (!token) {
-  //       alert("Please log in to continue booking.");
-  //       navigate("/StudentLogin", { state: { from: location.pathname } });
-  //       return;
-  //     }
-
-  //     // Fetch user details
-  //     const res = await api.get("/auth/user", {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-
-  //     if (res.data.success) {
-  //       setUser(res.data.user);
-  //       setIsPopupOpen(true);
-  //     } else {
-  //       alert("Not authorized. Please log in again.");
-  //       localStorage.removeItem("hlopgToken");
-  //       navigate("/StudentLogin");
-  //     }
-  //   } catch (err) {
-  //     console.error("Auth verification failed:", err);
-  //     alert("Session expired. Please log in again.");
-  //     localStorage.removeItem("hlopgToken");
-  //     navigate("/StudentLogin", { state: { from: location.pathname } });
-  //   }
-  // };
-
-
-// Replace your handleBookNow function with this:
-const handleBookNow = async () => {
-  try {
-    const token = localStorage.getItem("hlopgToken");
-    const owner = localStorage.getItem("hlopgOwner");
-
-    // Check if user is owner
-    if (owner) {
-      alert("You are logged in as Hostel Owner. Not authorized to book.");
-      return;
-    }
-
-    // Check if user is logged in
-    if (!token) {
-      alert("Please log in to send booking request.");
-      navigate("/StudentLogin", { state: { from: location.pathname } });
-      return;
-    }
-
-    // Force popup to open immediately
-    setIsPopupOpen(true);
-    
-    // Then try to fetch user data
-    const userStr = localStorage.getItem("hlopgUser");
-    if (userStr && userStr !== "undefined" && userStr !== "null") {
-      try {
-        const cachedUser = JSON.parse(userStr);
-        console.log("✅ Using cached user:", cachedUser.name);
-        setUser(cachedUser);
-        return;
-      } catch (e) {
-        console.log("Could not parse cached user:", e);
-      }
-    }
-
-    // Fetch user from API if not in cache
-    try {
-      const res = await api.get("/auth/userid", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      console.log("📡 User API response:", res.data);
-
-      if (res.data && (res.data.id || res.data.name)) {
-        const userData = res.data;
-        const formattedUser = {
-          id: userData.id || userData.user_id || Date.now(),
-          name: userData.name || "User",
-          email: userData.email || "user@example.com",
-          phone: userData.phone || userData.mobile || "",
-          userType: userData.userType || "USER"
-        };
-
-        console.log("✅ Formatted user:", formattedUser);
-        setUser(formattedUser);
-        localStorage.setItem("hlopgUser", JSON.stringify(formattedUser));
-        
-      } else {
-        // Create default user
-        const defaultUser = {
-          id: Date.now(),
-          name: "User",
-          email: "user@example.com",
-          phone: "",
-          userType: "USER"
-        };
-        setUser(defaultUser);
-      }
-    } catch (apiErr) {
-      console.error("❌ User API error:", apiErr);
-      // Create fallback user
-      const fallbackUser = {
-        id: Date.now(),
-        name: "User",
-        email: "user@example.com",
-        phone: "",
-        userType: "USER"
-      };
-      setUser(fallbackUser);
-    }
-    
-  } catch (err) {
-    console.error("❌ Error in handleBookNow:", err);
-    // Still open popup with default user
-    setIsPopupOpen(true);
-    setUser({
-      id: Date.now(),
-      name: "User",
-      email: "user@example.com",
-      phone: "",
-      userType: "USER"
-    });
-  }
-};
-
-  // Replace your BookingPopup component with this:
-const BookingPopup = ({ onClose, onSubmit }) => {
-  const [selectedSharing, setSelectedSharing] = useState("single");
-  const [userPhone, setUserPhone] = useState(user?.phone || "");
-  const [userName, setUserName] = useState(user?.name || "");
-  const [userEmail, setUserEmail] = useState(user?.email || "");
-  
-  console.log("🎯 Popup rendered with user:", user);
-  console.log("🎯 isPopupOpen:", isPopupOpen);
-
-  // If popup should not be open, return null
-  if (!isPopupOpen) {
-    console.log("❌ Popup not rendered because isPopupOpen is false");
-    return null;
-  }
-
-  const sharingOptions = hostelData?.sharing_data 
-    ? Object.entries(hostelData.sharing_data).map(([type, price]) => ({
-        value: type,
-        label: `${type === 'single' ? '1-Sharing' : 
-                type === 'double' ? '2-Sharing' : 
-                type === 'triple' ? '3-Sharing' : 
-                type === 'four' ? '4-Sharing' : 
-                type === 'five' ? '5-Sharing' : 
-                type === 'six' ? '6-Sharing' : 
-                `${type}-Sharing`} - ₹${price}/month`
-      }))
-    : [
-        { value: "single", label: "1-Sharing - Contact for price" },
-        { value: "double", label: "2-Sharing - Contact for price" },
-        { value: "triple", label: "3-Sharing - Contact for price" }
-      ];
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("📝 Form submitted");
-
-     if (!userName.trim()) {
-    alert("Please enter your name");
-    return;
-  }
-  
-  if (!userEmail.trim()) {
-    alert("Please enter your email");
-    return;
-  }
-  
-  if (!userPhone.trim() || userPhone.length < 10) {
-    alert("Please enter a valid phone number (10 digits minimum)");
-    return;
-  }
-    
-    // Create user object with form data
-    const bookingUser = {
-      id: user?.id || Date.now(),
-      name: userName,
-      email: userEmail,
-      phone: userPhone || "",
-      userType: user?.userType || "USER"
-    };
-    
-    console.log("👤 Booking user:", bookingUser);
-    
-    // if (!userName.trim() || !userEmail.trim()) {
-    //   alert("Please enter your name and email");
-    //   return;
-    // }
-    
-    const bookingData = {
-      sharing: selectedSharing,
-      price: hostelData?.sharing_data?.[selectedSharing] || "Contact for price",
-      user: bookingUser
-    };
-    
-    console.log("📦 Booking data:", bookingData);
-    
-    // Update global user state
-    setUser(bookingUser);
-    
-    // Submit booking
-    onSubmit(bookingData);
-  };
-
-   const handleClose = (e) => {
-    e.stopPropagation(); // Stop event from bubbling up
-    console.log("❌ Close button clicked");
-    onClose();
-  };
-
-  const handleCancel = (e) => {
-    e.stopPropagation(); // Stop event from bubbling up
-    console.log("❌ Cancel button clicked");
-    onClose();
-  };
-
-  const handleOverlayClick = (e) => {
-    console.log("🖱️ Overlay clicked, target class:", e.target.className);
-    // Only close if clicking directly on the overlay
-    if (e.target.className === "popup-overlay") {
-      console.log("✅ Closing popup via overlay click");
-      onClose();
-    }
-  };
-
+  /* ---------------- Render ---------------- */
   return (
-<div className="popup-overlay" onClick={handleOverlayClick}>
-      <div className="booking-popup" onClick={(e) => e.stopPropagation()}>
-        <div className="popup-header">
-          <h3>Book {hostelData?.hostel_name || "PG"}</h3>
-          <button className="close-popup" onClick={handleClose}>×</button>
-        </div>
-        
-        <div className="popup-content">
-          <div className="user-info-summary">
-            <h4>Your Information</h4>
-            
-            
-            {/* Name Input */}
-            <div className="info-row">
-              <span className="info-label">Name:*</span>
-              <input
-                type="text"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                placeholder="Enter your full name"
-                className="phone-input"
-                required
-              />
-            </div>
-            
-            {/* Email Input */}
-            <div className="info-row">
-              <span className="info-label">Email:*</span>
-              <input
-                type="email"
-                value={userEmail}
-                onChange={(e) => setUserEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="phone-input"
-                required
-              />
-            </div>
-            
-            {/* Phone Input */}
-            <div className="info-row">
-              <span className="info-label">Phone:*</span>
-              <input
-                type="tel"
-                value={userPhone}
-                onChange={(e) => setUserPhone(e.target.value)}
-                placeholder="Enter your phone number"
-                className="phone-input"
-                required
-              />
-            </div>
-            {/* <div className="phone-note">
-              <small>⚠️ The PG owner will contact you on this number</small>
-            </div> */}
-          </div>
-
-          {hostelData && (
-            <div className="hostel-info-summary">
-              <h4>PG Information</h4>
-              <div className="info-row">
-                <span className="info-label">PG Name:</span>
-                <span className="info-value">{hostelData.hostel_name}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Address:</span>
-                <span className="info-value">{hostelData.address || `${hostelData.area}, ${hostelData.city}`}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Type:</span>
-                <span className="info-value">{hostelData.pg_type}'s PG</span>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="booking-form">
-            <div className="form-group">
-              <label>Select Sharing Type:*</label>
-              <div className="sharing-options">
-                {sharingOptions.map((option) => (
-                  <div 
-                    key={option.value}
-                    className={`sharing-option ${selectedSharing === option.value ? 'selected' : ''}`}
-                    onClick={() => {
-                      console.log("🎯 Selected sharing:", option.value);
-                      setSelectedSharing(option.value);
-                    }}
-                  >
-                    <input 
-                      type="radio" 
-                      name="sharing" 
-                      value={option.value} 
-                      checked={selectedSharing === option.value}
-                      onChange={() => setSelectedSharing(option.value)}
-                      hidden
-                    />
-                    <span>{option.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="form-actions">
-              <button 
-                type="button" 
-                className="cancel-btn" 
-                onClick={handleCancel}
-              >
-                Cancel
-              </button>
-               <button 
-                type="submit" 
-                className="submit-btn" 
-                disabled={bookingLoading}
-              >
-                {bookingLoading ? (
-                  <>
-                    <span className="spinner"></span>
-                    Sending Request...
-                  </>
-                ) : (
-                  "Send Booking Request"
-                )}
-              </button>
-            </div>
-          </form>
-
-          {/* <div className="booking-note">
-            <p>⚠️ Note: This is a booking request. The PG owner will contact you to confirm availability and complete the booking process.</p>
-          </div> */}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-  if (loading) return <div className="loading">Loading hostel details...</div>;
-  if (!hostelData) return <div className="error">No hostel found.</div>;
-
-  return (
-    <div className="hostel-page">
-      {/* Hostel UI */}
-      <div className="hostel-main">
-        {/* Left Images */}
-        <div className="hostel-images">
-          <div className="main-img">
-            <button className="arrow-left" onClick={prevImage}>
-              <FaChevronLeft />
-            </button>
-            <img src={images[mainImageIndex]} alt="Room" />
-            <button className="arrow-right" onClick={nextImage}>
-              <FaChevronRight />
-            </button>
-          </div>
-
-          <div className="thumbnail-container">
-            {images.map((img, idx) => (
-              <img
-                key={idx}
-                src={img}
-                alt={`Thumb ${idx}`}
-                className={mainImageIndex === idx ? "active-thumb" : ""}
-                onClick={() => setMainImageIndex(idx)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Right Details */}
-        <div className="hostel-details">
-          <h2 className="black-text">{hostelData.hostel_name}</h2>
-          <p className="black-text">{hostelData.address}</p>
-          <p className="black-text">
-            <b>Type of Living:</b> {hostelData.pg_type}'s PG
-          </p>
-
-          {/* Pricing */}
-          <div className="stats">
-            {hostelData.sharing_data ? (
-              Object.entries(hostelData.sharing_data).map(([sharing, price], idx) => (
-                <div key={idx} className="stat-container">
-                  <span className="stat-btn black-text">
-                    {sharing === 'single' ? '1-Sharing' : 
-                     sharing === 'double' ? '2-Sharing' : 
-                     sharing === 'triple' ? '3-Sharing' : 
-                     sharing === 'four' ? '4-Sharing' : 
-                     sharing === 'five' ? '5-Sharing' : 
-                     sharing === 'six' ? '6-Sharing' : 
-                     `${sharing}-Sharing`}  ₹{price}
-                  </span>
-                </div>
-              ))
-            ) : hostelData.sharing ? (
-              Object.entries(hostelData.sharing).map(([sharing, price], idx) => (
-                <div key={idx} className="stat-container">
-                  <span className="stat-btn black-text">
-                    {sharing} ₹{price}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="stat-container">
-                <span className="stat-btn black-text">
-                  Price not specified
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Amenities */}
-          <h3 className="black-text">Amenities</h3>
-          <div className="furnished-icons">
-            {hostelData.facilities ? (
-              <>
-                {hostelData.facilities.wifi && (
-                  <span>
-                    <FaWifi /> Free WiFi
-                  </span>
-                )}
-                {hostelData.facilities.parking && (
-                  <span>
-                    <FaParking /> Parking
-                  </span>
-                )}
-                {hostelData.facilities.ac && (
-                  <span>
-                    <FaFan /> AC
-                  </span>
-                )}
-                {hostelData.facilities.tv && (
-                  <span>
-                    <FaTv /> TV
-                  </span>
-                )}
-                {hostelData.facilities.gym && (
-                  <span>
-                    <FaDoorClosed /> Gym
-                  </span>
-                )}
-                {hostelData.facilities.geyser && (
-                  <span>
-                    <FaShower /> Hot Water
-                  </span>
-                )}
-                {hostelData.facilities.fan && (
-                  <span>
-                    <FaFan /> Fan
-                  </span>
-                )}
-                {hostelData.facilities.bed && (
-                  <span>
-                    <FaBed /> Bed
-                  </span>
-                )}
-                {hostelData.facilities.lights && (
-                  <span>
-                    <FaLightbulb /> Lights
-                  </span>
-                )}
-                {hostelData.facilities.cupboard && (
-                  <span>
-                    <FaDoorClosed /> Cupboard
-                  </span>
-                )}
-                {hostelData.facilities.food && (
-                  <span>
-                    <FaLightbulb /> Food Included
-                  </span>
-                )}
-                {hostelData.facilities.water && (
-                  <span>
-                    <FaShower /> 24/7 Water
-                  </span>
-                )}
-                {hostelData.facilities.clean && (
-                  <span>
-                    <FaBroom /> Cleaning
-                  </span>
-                )}
-              </>
-            ) : hostelData.amenities ? (
-              Object.entries(hostelData.amenities).map(([amenity, available], idx) => (
-                available && (
-                  <span key={idx}>
-                    {amenity === 'wifi' && <><FaWifi /> WiFi</>}
-                    {amenity === 'parking' && <><FaParking /> Parking</>}
-                    {amenity === 'ac' && <><FaFan /> AC</>}
-                    {amenity === 'tv' && <><FaTv /> TV</>}
-                    {amenity === 'gym' && <><FaDoorClosed /> Gym</>}
-                    {amenity === 'geyser' && <><FaShower /> Hot Water</>}
-                    {amenity === 'fan' && <><FaFan /> Fan</>}
-                    {amenity === 'bed' && <><FaBed /> Bed</>}
-                    {amenity === 'lights' && <><FaLightbulb /> Lights</>}
-                    {amenity === 'cupboard' && <><FaDoorClosed /> Cupboard</>}
-                    {amenity === 'food' && <><FaLightbulb /> Food</>}
-                    {amenity === 'water' && <><FaShower /> Water</>}
-                    {amenity === 'clean' && <><FaBroom /> Cleaning</>}
-                  </span>
-                )
-              ))
-            ) : (
-              <span className="black-text">No amenities listed</span>
-            )}
-          </div>
-
-          {/* Reviews */}
-          <div className="reviews-section">
-            <h2 className="black-text">PG Reviews</h2>
-            <div className="rating-overviews">
-              <div className="avg-rating">
-                <span className="rating-number">{avgRating.toFixed(1)}</span>
-                {renderStars(avgRating)}
-                <span className="total-reviews">({totalReviews} reviews)</span>
-              </div>
-            </div>
-
-            <div className="reviews-list">
-              {dummyReviews.slice(0, 1).map((review) => (
-                <div key={review.id} className="review-item">
-                  <div className="reviewer-info">
-                    <img
-                      src={review.avatar}
-                      alt={review.name}
-                      className="reviewer-avatar"
-                    />
-                    <div>
-                      <h4 className="reviewer-name">{review.name}</h4>
-                      <p className="review-date">{review.date}</p>
-                    </div>
-                  </div>
-                  <div className="review-content">
-                    {renderStars(review.rating)}
-                    <p className="review-text">{review.comment}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
     
-      {/* Food Menu */}
- <div className="food-menu">
-     <h2 className="black-text">Food Menu</h2>
-  
-   {/* Debug info - you can remove this after fixing */}
-  <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-    Debug: Hostel ID: {hostelId} | Menu Items: {foodMenu.length} | Loading: {menuLoading ? 'Yes' : 'No'}
-   </div>
-  
- {menuLoading ? (
-    <div className="loading-food">
-      <p>Loading food menu...</p>
-      <p style={{ fontSize: '14px', color: '#888' }}>Please wait while we fetch the meal details</p>
-    </div>
-  ) : foodMenu.length > 0 ? (
-    <>
-      <table className="food-table">
-        <thead>
-          <tr>
-            <th>DAY</th>
-            <th>BREAKFAST</th>
-            <th>LUNCH</th>
-            <th>DINNER</th>
-          </tr>
-        </thead>
-        <tbody>
-          {foodMenu.map((day, idx) => (
-            <tr key={idx} className="food-row">
-              <td className="day-cell">
-                <strong>{day.day}</strong>
-              </td>
-              <td className="meal-cell">
-                {typeof day.breakfast === 'string' ? day.breakfast : 
-                 Array.isArray(day.breakfast) ? day.breakfast.join(', ') : 
-                 JSON.stringify(day.breakfast)}
-              </td>
-              <td className="meal-cell">
-                {typeof day.lunch === 'string' ? day.lunch : 
-                 Array.isArray(day.lunch) ? day.lunch.join(', ') : 
-                 JSON.stringify(day.lunch)}
-              </td>
-              <td className="meal-cell">
-                {typeof day.dinner === 'string' ? day.dinner : 
-                 Array.isArray(day.dinner) ? day.dinner.join(', ') : 
-                 JSON.stringify(day.dinner)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {/* <p className="food-menu-note">Menu is subject to change based on availability and season</p> */}
-    </>
-  ) : (
-    <div className="no-food-menu">
-      <p>🍽️ No food menu available for this hostel</p>
-      <p className="small-text">
-        The hostel hasn't provided a food menu yet. 
-        You can contact them directly for meal information.
-      </p>
-      <button 
-        className="contact-hostel-btn"
-        onClick={() => alert("Contact feature coming soon!")}
-      >
-        Contact Hostel
-      </button>
-    </div>
-  )}
-</div>
+    <div className="home">
+      {/* ===== App Download Popup ===== */}
+      {showPopup && (
+        <div className="app-popup-overlay">
+          <div className="app-popup-card">
+            <button className="popup-close" onClick={closePopup}>
+              ✕
+            </button>
 
-      {/* Book Now Button */}
-      {/* <div className="book-now">
-        <button className="book-now-btn" onClick={handleBookNow}>
-          Book Now
-        </button>
-      </div> */}
+            <img src={logo} alt="logo" className="popup-app-img" />
 
-      <div className="book-now">
-  <button className="book-now-btn" onClick={handleBookNow}>
-    Book Now 
-  </button>
-  <p className="booking-note-small">
-    No payment required. Owner will contact you directly.
-  </p>
-</div>
+            <h2>
+              Download Our <span className="brand-text">HLOPG</span> Mobile App
+            </h2>
 
-      {/* Booking Popup */}
-      {isPopupOpen && (
-        <BookingPopup 
-          onClose={() => setIsPopupOpen(false)} 
-          onSubmit={handleCreateBooking}
-        />
+            <p>Find hostels faster, easier & smarter with our app.</p>
+
+            <div className="popup-buttons">
+              <a href={PLAYSTORE_LINK} target="_blank" rel="noopener noreferrer">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" />
+              </a>
+
+              <a href={APPSTORE_LINK} target="_blank" rel="noopener noreferrer">
+                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="App Store" />
+              </a>
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* ===== Hero Section ===== */}
+      <div className="hero">
+        <div className="overlay">
+          <h1 className="title">HloPG</h1>
+          <p className="subtitle">
+            Because finding a PG shouldn't feel like a struggle.
+          </p>
+        </div>
+      </div>
+
+      {/* ===== City Sections ===== */}
+      {cities.map((city, index) => {
+        const cityRouteName = city.name.match(/in (\w+)/i)?.[1]?.toLowerCase() || "unknown";
+
+        return (
+          <div key={index} className="city-section">
+            <div className="city-header">
+             <h2>{city.name.replace("Hostel's in ", "")}</h2>
+              {city.pgList.length > 0 && (
+                <div
+                  className="know-more-btn"
+                  onClick={() => navigate(`/city/${cityRouteName}`)}
+                >
+                  See More...
+                </div>
+              )}
+            </div>
+
+            {city.pgList.length > 0 ? (
+              <div className="pg-container">
+                {/* Arrows */}
+                <button
+                  className={`arrow left ${
+                    arrowVisibility[index]?.left ? "show" : "hide"
+                  }`}
+                  onClick={() => scrollPG(index, "prev")}
+                >
+                  <FaChevronLeft />
+                </button>
+
+                <button
+                  className={`arrow right ${
+                    arrowVisibility[index]?.right ? "show" : "hide"
+                  }`}
+                  onClick={() => scrollPG(index, "next")}
+                >
+                  <FaChevronRight />
+                </button>
+
+                {/* Scroll */}
+                {/* Scroll - Add wrapper for fixed width cards */}
+<div className="pg-scroll-wrapper">
+  <div
+    className="pg-scroll"
+    ref={(el) => (pgRefs.current[index] = el)}
+    onScroll={() => updateArrowVisibility(index)}
+  >
+                  <div className="pg-track">
+                    {city.pgList.map((pg) => (
+                      <div key={pg.id} className="home-pg-card fixed-width-card">
+                        <div
+                          className="pg-card-click"
+                          onClick={() => handlePgCardClick(pg)}
+                        >
+                          <div className=" pg-image ">
+                            <img 
+                              src={pg.img} 
+                              alt={pg.name} 
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = defaultPGImg;
+                              }} 
+                            />
+
+                            {/* ❤️ Heart Icon */}
+                            <FaHeart
+                              className={`wishlists ${
+                                likedPgIds.includes(pg.id) ? "liked" : "unliked"
+                              }`}
+                              onClick={(e) => toggleLike(pg, e)}
+                            />
+                          </div>
+
+                          <div className="pg-details new-details">
+                            {/* Hostel Name & Rating */}
+                            <div className="pg-header new-header">
+                              <h3 className="pg-name new-name">{pg.name}</h3>
+                              <div className="pg-rating new-rating">
+                                <FaStar className="star" />
+                                <span>{pg.rating}</span>
+                              </div>
+                            </div>
+
+                            {/* Location */}
+                            <p className="pg-location new-location">
+                              {/* <span className="gridicons--location"></span> */}
+                              {pg.location}, {pg.city || ""}
+                            </p>
+
+                            {/* PG Type */}
+                            {pg.pg_type && (
+                              <div className="pg-type-badge">
+                                <FaHome />
+                                <span>{pg.pg_type} PG</span>
+                              </div>
+                            )}
+
+                            {/* Sharing Type & Price */}
+                            <div className="sharing-price-section">
+                              <div className="sharing-info">
+                                <FaUserFriends />
+                                <span className="sharing-text">{pg.sharing}</span>
+                              </div>
+                              {/* <div className="price-tag">
+                                <span className="price-label">Starts From:</span>
+                                <h4 className="price">{pg.price}</h4>
+                                <span className="per-month">/month</span>
+                              </div> */}
+                            </div>
+
+                            {/* Facilities */}
+                            <div className="facilities-section">
+                              <h4 className="facilities-title">Facilities:</h4>
+                              <div className="facilities-grid">
+                                {pg.facilities.map((facility, i) => (
+                                  <div key={i} className="facility-item">
+                                    <span className="facility-icon">
+                                      {facility.icon || getFacilityIcon(facility)}
+                                    </span>
+                                    <span className="facility-name">
+                                      {facility.name || facility}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Additional Info */}
+                            {/* <div className="additional-info">
+                              {pg.description && (
+                                <div className="description-preview">
+                                  <p className="desc-text">{pg.description.substring(0, 80)}...</p>
+                                </div>
+                              )} */}
+                              
+                              {/* Status Badge */}
+                              {/* {pg.status && (
+                                <div className={`status-badge ${pg.status.toLowerCase()}`}>
+                                  {pg.status}
+                                </div>
+                              )} */}
+                            {/* </div> */}
+
+                            {/* View Details Button */}
+                            {/* <button 
+                              className="view-details-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/hostel/${pg.id}`);
+                              }}
+                            >
+                              View Full Details
+                            </button> */}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              </div>
+            ) : (
+              <div className="no-hostels-message">
+                <p>No hostels found in {city.name.match(/in (\w+)/i)?.[1] || "this city"}. Check back soon!</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        authType={authType}
+      />
     </div>
   );
-};
+}
 
-export default HostelPage;
-
+export default Home;
