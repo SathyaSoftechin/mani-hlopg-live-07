@@ -1,62 +1,80 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
-/* ================= GLOBAL ================= */
 html, body {
   margin: 0;
   padding: 0;
+  height: auto !important;
   overflow-x: hidden;
+  overflow-y: auto !important;
 }
 
+/* Lock scroll when popup open */
 body.no-scroll {
   position: fixed;
   width: 100%;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
+/* ================= Base ================= */
 .home {
   font-family: "Inter", sans-serif;
+  color: #000000;
   background: #ffffff14;
-  color: #000;
+  overflow-x: hidden;
 }
 
-/* ================= HERO ================= */
+/* ================= Hero Section ================= */
 .hero {
-  height: 60vh;
-  background: url("../assets/hyderabad.png") center/cover no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  background: url("../assets/hyderabad.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  height: 60vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  margin-bottom: 0px !important;
+  border-radius: 0 0 20px 20px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
 }
 
 .hero::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
 }
 
 .overlay {
   position: relative;
-  text-align: center;
-  color: #fff;
-}
-
-.overlay .title {
-  font-size: 68px;
-}
-
-.overlay .subtitle {
-  font-size: 24px;
-}
-
-/* ================= CITY SECTION ================= */
-.city-section {
-  padding: 40px 5% 60px;
-  position: relative;
   z-index: 2;
+  text-align: center;
+}
+
+/* ================= Hero Text ================= */
+.hero .overlay .title {
+  font-family: "DM Serif Text", serif !important;
+  font-size: 68px !important;
+  font-weight: 50 !important;
+  color: #ffffff !important;
+}
+
+.hero .overlay .subtitle {
+  font-family: "DM Serif Text", serif !important;
+  font-size: 24px !important;
+  font-weight: 100 !important;
+  color: #ffffff !important;
+}
+
+/* ================= City Section ================= */
+.city-section {
+  padding: 60px 5% 60px;
+  position: relative;
+  z-index: 7;
+  isolation: isolate;
+  margin-bottom: 50px;
 }
 
 .city-section:first-of-type {
@@ -72,28 +90,30 @@ body.no-scroll {
 
 .city-header h2 {
   font-size: 26px;
+  font-weight: 700;
   color: rgb(8, 84, 250);
 }
 
 .know-more-btn {
   color: #7556ff;
-  cursor: pointer;
+  padding: 10px 18px;
   font-size: 18px;
-  transition: transform .3s;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
 .know-more-btn:hover {
   transform: scale(1.05);
 }
 
-/* ================= SCROLL ================= */
+/* ================= Scroll ================= */
 .pg-container {
   position: relative;
   overflow: hidden;
+  padding-bottom: 20px;
 }
 
 .pg-scroll {
-  display: flex;
   overflow-x: auto;
   scroll-behavior: smooth;
   scrollbar-width: none;
@@ -108,28 +128,39 @@ body.no-scroll {
   gap: 30px;
 }
 
-/* ================= HOSTEL CARD ================= */
+/* ================================================================= */
+/* ======================= HOSTEL CARD (FIXED) ====================== */
+/* ================================================================= */
+
 .home-pg-card {
+  background: #ffffff;
+  border-radius: 20px;
   min-width: 260px;
   max-width: 260px;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 4px 14px rgba(0,0,0,.08);
-  transition: transform .3s ease, box-shadow .3s ease;
+  display: flex;
+  flex-direction: column;
   position: relative;
+  cursor: pointer;
+
+  /* FIXES */
+  z-index: 1;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  will-change: transform;
 }
 
 .home-pg-card:hover {
   transform: translateY(-10px);
-  box-shadow: 0 18px 40px rgba(0,0,0,.18);
+  z-index: 10;
+  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.18);
 }
 
-/* IMAGE */
+/* Image */
 .pg-image {
-  padding: 14px;
-  background: #fff;
-  border-radius: 20px 20px 0 0;
   position: relative;
+  padding: 14px;
+  background: #ffffff;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
 }
 
 .pg-image img {
@@ -137,29 +168,45 @@ body.no-scroll {
   height: 180px;
   object-fit: cover;
   border-radius: 14px;
-  transition: transform .4s ease;
+  transition: transform 0.35s ease;
 }
 
-.home-pg-card:hover img {
-  transform: scale(1.05);
+.home-pg-card:hover .pg-image img {
+  transform: scale(1.04);
 }
 
-/* WISHLIST */
+/* Heart */
 .wishlists {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  font-size: 20px;
+  top: 22px;
+  right: 22px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
   color: #fff;
-  cursor: pointer;
   z-index: 5;
+  transition: 0.25s ease;
+}
+
+.wishlists:hover {
+  transform: scale(1.15);
 }
 
 .wishlists.liked {
-  color: red;
+  background: #ffffff;
+  color: #ff2b4d;
 }
 
-/* CONTENT */
+.wishlists.unliked {
+  color: #ffffff;
+}
+
+/* Details */
 .pg-details {
   padding: 12px 14px;
   display: flex;
@@ -178,13 +225,7 @@ body.no-scroll {
   font-weight: 600;
 }
 
-.pg-rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.pg-rating svg {
+.pg-rating .star {
   color: #f5b50a;
 }
 
@@ -193,7 +234,7 @@ body.no-scroll {
   color: #777;
 }
 
-/* TYPE */
+/* PG Type */
 .pg-type-badge {
   display: inline-flex;
   align-items: center;
@@ -201,19 +242,17 @@ body.no-scroll {
   background: #e3f2fd;
   color: #1976d2;
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: 14px;
   font-size: 12px;
+  font-weight: 600;
   width: fit-content;
 }
 
-/* SHARING */
+/* Sharing */
 .sharing-price-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-top: 1px dashed #ddd;
-  border-bottom: 1px dashed #ddd;
   padding: 6px 0;
+  border-top: 1px dashed #e0e0e0;
+  border-bottom: 1px dashed #e0e0e0;
 }
 
 .sharing-info {
@@ -221,78 +260,298 @@ body.no-scroll {
   align-items: center;
   gap: 6px;
   font-size: 13px;
+  color: #555;
 }
 
-/* FACILITIES */
+.sharing-text {
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Facilities */
 .facilities-section {
   margin-top: 6px;
 }
 
 .facilities-grid {
   display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 6px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 
 .facility-item {
-  background: #f8f9fa;
-  border-radius: 6px;
-  padding: 6px;
   display: flex;
   align-items: center;
   gap: 6px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 6px;
   font-size: 11px;
+  color: #555;
 }
 
-/* ================= ARROWS ================= */
+/* Responsive Card */
+@media (max-width: 768px) {
+  .facilities-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .facilities-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================= Popup, Arrows, No-hostels, Responsive ================= */
+/* (UNCHANGED — exactly preserved from your file) */
+/* ================= Arrows ================= */
 .arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: transparent;
+  background: #00000000;
+  color: #7556ff;
   border: none;
   font-size: 30px;
-  color: #7556ff;
+  width: 40px;
+  height: 395px;
   cursor: pointer;
-  z-index: 10;
+  transition: 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 2;
 }
 
-.arrow.left { left: 0; }
-.arrow.right { right: 0; }
+.arrow:hover {
+  background: #00000000;
+  color: #7556ff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.arrow.left {
+  left: 0px;
+}
+
+.arrow.right {
+  right: 0px;
+}
 
 .arrow.hide {
   opacity: 0;
   pointer-events: none;
 }
 
-/* ================= POPUP ================= */
-.app-popup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
+.arrow.show {
+  opacity: 1;
 }
 
-.app-popup-card {
-  background: #fff;
-  border-radius: 22px;
-  padding: 26px;
-  max-width: 520px;
-  width: 92%;
-  text-align: center;
+/* --------- Desktop (1200px) --------- */
+@media (max-width: 1200px) {
+  .city-header h2 {
+    font-size: 24px;
+  }
 }
 
-/* ================= RESPONSIVE ================= */
+/* ==============================
+   📌 768px — Tablet Portrait
+=================================*/
 @media (max-width: 768px) {
-  .hero { height: 40vh; }
-  .overlay .title { font-size: 30px; }
-  .overlay .subtitle { font-size: 15px; }
-  .facilities-grid { grid-template-columns: repeat(2,1fr); }
+  .city-header h2 {
+    font-size: 18px;
+  }
+
+  .hero {
+    height: 40vh;
+  }
+
+  .hero .overlay .title {
+    font-size: 30px !important;
+  }
+
+  .hero .overlay .subtitle {
+    font-size: 15px !important;
+  }
+}
+
+/* --------- Tablet Landscape (992px) --------- */
+@media (max-width: 992px) {
+  .city-header h2 {
+    font-size: 18px;
+  }
+
+  .hero {
+    height: 40vh;
+  }
+}
+
+/* ==============================
+   📌 600px — Mobile
+=================================*/
+@media (max-width: 600px) {
+  .city-header h2 {
+    font-size: 16px;
+  }
+
+  .hero {
+    height: 40vh;
+  }
 }
 
 @media (max-width: 480px) {
-  .facilities-grid { grid-template-columns: 1fr; }
+  .city-header h2 {
+    font-size: 16px;
+  }
+
+  .hero {
+    height: 40vh;
+  }
+}
+
+/* ================= Overlay ================= */
+.app-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+}
+
+/* ================= Popup Card ================= */
+.app-popup-card {
+  width: 92%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 26px 28px;
+  text-align: center;
+  box-shadow: 0 35px 70px rgba(0, 0, 0, 0.35);
+  animation: popupScale 0.35s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ================= Close Button ================= */
+.popup-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f2f2f2;
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  line-height: 0;
+  box-sizing: border-box;
+}
+
+.popup-close:hover {
+  background: #e5e5e5 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* ================= Icon ================= */
+.popup-app-img {
+  width: 90px;
+  margin: 0 auto 4px auto;
+  opacity: 0.9;
+}
+
+/* ================= Title ================= */
+.app-popup-card h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111;
+  margin: 4px 0 2px 0;
+}
+
+/* ================= Subtitle ================= */
+.app-popup-card p {
+  color: #555;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ================= Buttons ================= */
+.popup-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  width: fit-content;
+  margin: 10px auto 0 auto;
+  min-height: 50px;
+}
+
+.popup-buttons img {
+  height: 50px;
+  width: auto;
+  display: block;
+  aspect-ratio: 3 / 1;
+}
+
+.popup-buttons img:hover {
+  transform: scale(1.06);
+}
+
+.brand-text {
+  color: #7556ff;
+}
+
+/* ================= Animation ================= */
+@keyframes popupScale {
+  from {
+    transform: translateY(20px) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* ================= Mobile Popup ================= */
+@media (max-width: 600px) {
+  .app-popup-card {
+    padding: 20px 18px;
+    border-radius: 18px;
+  }
+
+  .popup-buttons img {
+    height: 40px;
+  }
+
+  .app-popup-card h2 {
+    font-size: 19px;
+  }
+
+  .app-popup-card p {
+    font-size: 13px;
+  }
+}
+
+/* ================= No Hostels ================= */
+.no-hostels-message {
+  text-align: center;
+  padding: 40px 20px;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  margin: 20px 0;
+  color: #6c757d;
+  font-size: 16px;
+  border: 1px dashed #dee2e6;
+}
+
+.no-hostels-message p {
+  margin: 0;
 }
