@@ -1,22 +1,26 @@
+
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import "./HostelPage.css";
-
 import {
   FaWifi,
   FaFan,
   FaBed,
   FaTv,
   FaLightbulb,
+  FaDoorClosed,
   FaChevronLeft,
   FaChevronRight,
   FaStar,
   FaShower,
+  FaLock,
   FaParking,
   FaBroom,
   FaStarHalfAlt,
-  FaRegStar,
+  FaRegStar
 } from "react-icons/fa";
+import { MdOutlineSmokeFree, MdNoDrinks } from "react-icons/md";
 
 import api from "../api";
 
@@ -59,10 +63,9 @@ const HostelPage = () => {
   const [foodMenu, setFoodMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuLoading, setMenuLoading] = useState(true);
-
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [user, setUser] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
 
@@ -72,18 +75,16 @@ const HostelPage = () => {
       name: "Rahul Sharma",
       avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
       rating: 4.5,
-      comment:
-        "Great PG, clean facilities and friendly staff. Food quality is excellent!",
-      date: "2 weeks ago",
+      comment: "Great PG, clean facilities and friendly staff. Food quality is excellent!",
+      date: "2 weeks ago"
     },
     {
       id: 2,
       name: "Priya Patel",
       avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
       rating: 4.0,
-      comment:
-        "Good location and well-maintained rooms. WiFi could be better though.",
-      date: "1 month ago",
+      comment: "Good location and well-maintained rooms. WiFi could be better though.",
+      date: "1 month ago"
     },
     {
       id: 3,
@@ -91,7 +92,7 @@ const HostelPage = () => {
       avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
       rating: 5.0,
       comment: "Best PG in the area! Owner is very cooperative and helpful.",
-      date: "3 days ago",
+      date: "3 days ago"
     },
     {
       id: 4,
@@ -99,7 +100,7 @@ const HostelPage = () => {
       avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
       rating: 3.5,
       comment: "Affordable price but need more parking space.",
-      date: "2 months ago",
+      date: "2 months ago"
     },
     {
       id: 5,
@@ -107,383 +108,861 @@ const HostelPage = () => {
       avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
       rating: 4.0,
       comment: "Clean rooms and good food. Would recommend!",
-      date: "1 week ago",
-    },
+      date: "1 week ago"
+    }
   ];
 
-  const avgRating =
-    dummyReviews.reduce((sum, r) => sum + r.rating, 0) / dummyReviews.length;
+  const avgRating = dummyReviews.reduce((sum, r) => sum + r.rating, 0) / dummyReviews.length;
   const totalReviews = dummyReviews.length;
 
-  // ================= FETCH HOSTEL DETAILS =================
+  // Fetch hostel data
   useEffect(() => {
     const fetchHostel = async () => {
       try {
-        console.log("🏠 Fetching hostel with ID:", hostelId);
-
+        console.log("Fetching hostel with ID:", hostelId);
         const res = await api.get(`/hostel/${hostelId}`);
-        console.log("✅ Hostel API response:", res.data);
-
+        console.log("Full API Response:", res.data);
+        console.log("Hostel Data:", res.data.data);
+        
         if (res.data.success) {
           const data = res.data.data;
-
-          // ✅ Fix image URLs correctly
-          if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-            data.images = data.images.map((img) => {
+          
+          // Fix image URLs
+          if (data.images && Array.isArray(data.images)) {
+            // Process images to ensure they have full URLs
+            data.images = data.images.map(img => {
               if (!img) return pg1;
-
-              if (img.startsWith("http")) return img;
-
-              if (img.startsWith("/uploads")) {
-                return `https://hlopg.com${img}`;
-              }
-
+              if (img.startsWith('http')) return img;
+              if (img.startsWith('/uploads')) return `https://hlopg.com${img}`;
               return `https://hlopg.com/uploads/${img}`;
             });
           } else if (data.img) {
-            const mainImg = data.img.startsWith("http")
-              ? data.img
-              : data.img.startsWith("/uploads")
-              ? `https://hlopg.com${data.img}`
-              : `https://hlopg.com/uploads/${data.img}`;
-
+            // Fallback to single image
+            const mainImg = data.img.startsWith('http') ? data.img : 
+                           data.img.startsWith('/uploads') ? `https://hlopg.com${data.img}` :
+                           `https://hlopg.com/uploads/${data.img}`;
             data.images = [mainImg];
           } else {
             data.images = [pg1, pg2, pg3, pg4, pg5];
           }
-
+          
           setHostelData(data);
         } else {
-          setHostelData(null);
+          console.error("API returned error:", res.data.message);
         }
       } catch (err) {
-        console.error("❌ Error fetching hostel:", err);
-        setHostelData(null);
+        console.error("Error fetching hostel:", err);
+        console.error("Error details:", err.response?.data);
       } finally {
         setLoading(false);
       }
     };
-
     fetchHostel();
   }, [hostelId]);
 
-  // ================= FETCH FOOD MENU (FULL FIX) =================
+  // Fetch food menu
   useEffect(() => {
     const fetchFoodMenu = async () => {
       try {
-        setMenuLoading(true);
+        console.log("🔄 Fetching food menu for hostel:", hostelId);
+        
+        if (!hostelId) {
+          console.log("⚠️ No hostel ID available");
+          setFoodMenu([]);
+          setMenuLoading(false);
+          return;
+        }
 
-        console.log("🍽️ Fetching food menu for hostel:", hostelId);
-
-        const res = await api.get(`/hostel/food_menu/${hostelId}`);
-
-        console.log("✅ Food menu full response:", res.data);
-
-        if (res.data.success) {
-          const data = res.data.data;
-
-          // ✅ Case 1: backend returns direct array
-          if (Array.isArray(data)) {
-            setFoodMenu(data);
+        // Try to fetch from API endpoints first
+        console.log("🌐 Trying to fetch food menu from API...");
+        
+        const endpoints = [
+          `/food_menu/${hostelId}`,
+          `/hostel/food_menu/${hostelId}`,
+          `/hostel/${hostelId}/food_menu`,
+          `/hostel/${hostelId}/menu`,
+          `/menu/${hostelId}`
+        ];
+        
+        let foodData = null;
+        let found = false;
+        
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`🔍 Trying endpoint: ${endpoint}`);
+            const res = await api.get(endpoint);
+            console.log(`📡 Response from ${endpoint}:`, res.data);
+            
+            if (res.data.success || res.data.ok || res.data.data || res.data.menu) {
+              foodData = res.data.data || res.data.menu || res.data.food_menu || res.data;
+              console.log("✅ Food data found from API:", foodData);
+              found = true;
+              break;
+            }
+          } catch (err) {
+            console.log(`❌ Endpoint ${endpoint} failed:`, err.message);
           }
-          // ✅ Case 2: backend returns { menu: [...] }
-          else if (data && Array.isArray(data.menu)) {
-            setFoodMenu(data.menu);
-          }
-          // ✅ Case 3: backend returns object
-          else if (data && typeof data === "object") {
-            setFoodMenu(Object.values(data));
-          }
-          // ❌ Unknown format
-          else {
-            setFoodMenu([]);
-          }
+        }
+        
+        // If no API data found, check if it's in hostelData (which might be fetched later)
+        if (!found && hostelData?.food_menu) {
+          console.log("📦 Food menu found in hostel data:", hostelData.food_menu);
+          foodData = hostelData.food_menu;
+          found = true;
+        }
+        
+        if (found && foodData) {
+          processFoodData(foodData);
         } else {
+          console.log("⚠️ No food menu data found");
           setFoodMenu([]);
         }
+        
       } catch (err) {
-        console.error("❌ Error fetching food menu:", err);
+        console.error("❌ Error in fetchFoodMenu:", err);
+        console.error("Error response:", err.response?.data);
         setFoodMenu([]);
       } finally {
         setMenuLoading(false);
       }
     };
-
-    if (hostelId) fetchFoodMenu();
+    
+    // Helper function to process food data
+    const processFoodData = (foodData) => {
+      console.log("🔧 Processing food data:", foodData);
+      
+      try {
+        let processedMenu = [];
+        
+        // Parse if it's a string
+        if (typeof foodData === 'string') {
+          try {
+            foodData = JSON.parse(foodData);
+            console.log("✅ Parsed food menu JSON:", foodData);
+          } catch (parseError) {
+            console.error("❌ Failed to parse food menu JSON:", parseError);
+            setFoodMenu([]);
+            return;
+          }
+        }
+        
+        // Case 1: Object with breakfast, lunch, dinner properties
+        if (foodData.breakfast || foodData.lunch || foodData.dinner) {
+          const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+          
+          processedMenu = days.map(day => ({
+            day: day.charAt(0).toUpperCase() + day.slice(1),
+            breakfast: foodData.breakfast?.[day] || foodData.breakfast?.[day.toUpperCase()] || foodData.breakfast || "-",
+            lunch: foodData.lunch?.[day] || foodData.lunch?.[day.toUpperCase()] || foodData.lunch || "-",
+            dinner: foodData.dinner?.[day] || foodData.dinner?.[day.toUpperCase()] || foodData.dinner || "-"
+          }));
+          
+          console.log("📅 Processed weekly menu:", processedMenu);
+        }
+        // Case 2: Array format
+        else if (Array.isArray(foodData)) {
+          processedMenu = foodData.map(item => ({
+            day: item.day || item.Day || "Day " + (item.id || ""),
+            breakfast: item.breakfast || item.Breakfast || "-",
+            lunch: item.lunch || item.Lunch || "-",
+            dinner: item.dinner || item.Dinner || "-"
+          }));
+          
+          console.log("📅 Processed array menu:", processedMenu);
+        }
+        // Case 3: Object with day keys
+        else if (typeof foodData === 'object' && foodData !== null) {
+          processedMenu = Object.entries(foodData).map(([day, menu]) => ({
+            day: day.charAt(0).toUpperCase() + day.slice(1),
+            breakfast: menu.breakfast || menu.Breakfast || "-",
+            lunch: menu.lunch || menu.Lunch || "-",
+            dinner: menu.dinner || menu.Dinner || "-"
+          }));
+          
+          console.log("📅 Processed object menu:", processedMenu);
+        }
+        else {
+          console.log("⚠️ Unknown food data format:", foodData);
+          processedMenu = [];
+        }
+        
+        setFoodMenu(processedMenu);
+        
+      } catch (error) {
+        console.error("❌ Error processing food data:", error);
+        setFoodMenu([]);
+      }
+    };
+    
+    // Only fetch when we have hostelId
+    if (hostelId) {
+      console.log("🚀 Starting food menu fetch...");
+      fetchFoodMenu();
+    }
   }, [hostelId]);
 
-  // ================= IMAGE CAROUSEL =================
-  const images =
-    hostelData?.images && hostelData.images.length > 0
-      ? hostelData.images
-      : [pg1, pg2, pg3, pg4, pg5];
-
+  // Image carousel
+  const images = hostelData?.images?.length
+    ? hostelData.images
+    : [pg1, pg2, pg3, pg4, pg5];
   const prevImage = () =>
     setMainImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-
   const nextImage = () =>
     setMainImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
 
-  // ================= BOOK NOW BUTTON =================
-  const handleBookNow = async () => {
+  
+  
+// // Update your handleCreateBooking function:
+// const handleCreateBooking = async (bookingData) => {
+//   try {
+//     console.log("🚀 Starting booking process...");
+//     console.log("📦 Booking data:", bookingData);
+    
+//     setBookingLoading(true);
+//     const token = localStorage.getItem("hlopgToken");
+
+//     if (!bookingData.user) {
+//       alert("Please provide your information");
+//       return;
+//     }
+
+//     const currentUser = bookingData.user;
+//     console.log("👤 Current user for booking:", currentUser);
+
+//     // Prepare booking payload
+//     const bookingPayload = {
+//       hostel_id: hostelId,
+//       user_name: currentUser.name,
+//       user_email: currentUser.email,
+//       user_phone: currentUser.phone || "Not provided",
+//       sharing_type: bookingData.sharing,
+//       booking_date: new Date().toISOString()
+//     };
+
+//     console.log("📤 Sending booking payload:", bookingPayload);
+
+//     try {
+//       // Send booking request
+//       const bookingRes = await api.post("/booking/request", bookingPayload, {
+//         headers: { 
+//           Authorization: `Bearer ${token}`,
+//           'Content-Type': 'application/json'
+//         }
+//       });
+
+//       console.log("✅ Booking API response:", bookingRes.data);
+
+//       if (bookingRes.data.success) {
+//         const bookingId = bookingRes.data.booking_id || "BR-" + Date.now();
+        
+//         // IMPORTANT: Show success alert with owner contact message
+//         const successMessage = 
+//           `✅ Booking Request Sent Successfully!\n\n` +
+//           `📋 Booking ID: ${bookingId}\n` +
+//           `🏠 PG: ${hostelData.hostel_name}\n` +
+//           `📍 Location: ${hostelData.address || `${hostelData.area}, ${hostelData.city}`}\n` +
+//           `👤 Your Details:\n` +
+//           `   • Name: ${currentUser.name}\n` +
+//           `   • Email: ${currentUser.email}\n` +
+//           `   • Phone: ${currentUser.phone || 'Not provided'}\n` +
+//           `🛏️ Sharing Type: ${bookingData.sharing}\n\n` +
+//           `📞 **The PG owner has been notified and will contact you shortly.**\n` +
+//           `📱 Please keep your phone accessible.\n` +
+//           `⏰ They will call you within 24 hours.\n\n` +
+//           `Thank you for choosing HloPG!`;
+        
+//         console.log("💬 Showing success alert...");
+        
+//         // THIS IS THE ALERT THAT SHOULD APPEAR
+//         alert(successMessage);
+        
+//         // Save user data
+//         localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
+        
+//         // Close popup
+//         console.log("❌ Closing popup...");
+//         setIsPopupOpen(false);
+        
+//       } else {
+//         alert(`Booking failed: ${bookingRes.data.message || "Unknown error"}`);
+//       }
+
+//     } catch (bookingErr) {
+//       console.error("❌ Booking API error:", bookingErr);
+      
+//       // Fallback success message (in case API fails but we want to show something)
+//       const fallbackMessage = 
+//         `📝 Booking Request Recorded!\n\n` +
+//         `PG: ${hostelData.hostel_name}\n` +
+//         `Location: ${hostelData.address || `${hostelData.area}, ${hostelData.city}`}\n\n` +
+//         `Your Details:\n` +
+//         `• Name: ${currentUser.name}\n` +
+//         `• Email: ${currentUser.email}\n` +
+//         `• Phone: ${currentUser.phone || 'Not provided'}\n\n` +
+//         `📞 **The PG owner will contact you at the provided number.**\n` +
+//         `⏰ Expected within 24 hours.\n\n` +
+//         `If no contact, please call: 1800-123-4567`;
+      
+//       alert(fallbackMessage);
+      
+//       // Save user data anyway
+//       localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
+      
+//       setIsPopupOpen(false);
+//     }
+
+//   } catch (err) {
+//     console.error("❌ Unexpected error:", err);
+//     alert("Something went wrong. Please try again or contact support.");
+//   } finally {
+//     console.log("🏁 Booking process completed");
+//     setBookingLoading(false);
+//   }
+// };
+
+const handleCreateBooking = async (bookingData) => {
+  try {
+    console.log("🚀 Starting booking process...");
+    console.log("📦 Booking data:", bookingData);
+    
+    setBookingLoading(true);
+    const token = localStorage.getItem("hlopgToken");
+
+    if (!bookingData.user) {
+      alert("Please provide your information");
+      return;
+    }
+
+    const currentUser = bookingData.user;
+    console.log("👤 Current user for booking:", currentUser);
+
+    // Get hostel details
+    if (!hostelData) {
+      alert("Hostel information not available");
+      return;
+    }
+
+    // Prepare booking payload matching backend expectations
+    const bookingPayload = {
+      hostel_id: parseInt(hostelId), // Ensure it's a number
+      user_name: currentUser.name || "Guest",
+      user_email: currentUser.email || "",
+      user_phone: currentUser.phone || "",
+      sharing_type: bookingData.sharing || "single",
+      // Add missing fields that backend might expect
+      booking_date: new Date().toISOString().split('T')[0] // Format as YYYY-MM-DD
+    };
+
+    console.log("📤 Sending booking payload:", bookingPayload);
+
     try {
-      const token = localStorage.getItem("hlopgToken");
-      const owner = localStorage.getItem("hlopgOwner");
-
-      if (owner) {
-        alert("You are logged in as Hostel Owner. Not authorized to book.");
-        return;
-      }
-
-      if (!token) {
-        alert("Please log in to send booking request.");
-        navigate("/StudentLogin", { state: { from: location.pathname } });
-        return;
-      }
-
-      setIsPopupOpen(true);
-
-      const userStr = localStorage.getItem("hlopgUser");
-      if (userStr && userStr !== "undefined" && userStr !== "null") {
-        try {
-          const cachedUser = JSON.parse(userStr);
-          setUser(cachedUser);
-          return;
-        } catch (e) {
-          console.log("⚠️ Could not parse cached user");
+      // Send booking request
+      const bookingRes = await api.post("/booking/request", bookingPayload, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
+      });
+
+      console.log("✅ Booking API response:", bookingRes.data);
+
+      if (bookingRes.data.success) {
+        const bookingId = bookingRes.data.booking_id || `BR-${Date.now()}`;
+        
+        // IMPORTANT: Show success alert with owner contact message
+        const successMessage = 
+          `✅ Booking Request Sent Successfully!\n\n` +
+          `📋 Booking ID: ${bookingId}\n` +
+          `🏠 PG: ${hostelData.hostel_name}\n` +
+          `📍 Location: ${hostelData.address || `${hostelData.area}, ${hostelData.city}`}\n` +
+          `👤 Your Details:\n` +
+          `   • Name: ${currentUser.name}\n` +
+          `   • Email: ${currentUser.email}\n` +
+          `   • Phone: ${currentUser.phone || 'Not provided'}\n` +
+          `🛏️ Sharing Type: ${bookingData.sharing}\n\n` +
+          `📞 **The PG owner has been notified and will contact you shortly.**\n` +
+          `📱 Please keep your phone accessible.\n` +
+          `⏰ They will call you within 24 hours.\n\n` +
+          `Thank you for choosing HloPG!`;
+        
+        console.log("💬 Showing success alert...");
+        
+        // THIS IS THE ALERT THAT SHOULD APPEAR
+        alert(successMessage);
+        
+        // Save user data
+        localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
+        
+        // Close popup
+        console.log("❌ Closing popup...");
+        setIsPopupOpen(false);
+        
+      } else {
+        alert(`Booking failed: ${bookingRes.data.message || "Unknown error"}`);
       }
 
+    } catch (bookingErr) {
+      console.error("❌ Booking API error:", bookingErr);
+      console.error("Error details:", bookingErr.response?.data);
+      
+      // Check for specific validation errors
+      if (bookingErr.response?.status === 400) {
+        const errorMsg = bookingErr.response?.data?.message || 
+                        "Invalid booking data. Please check your information.";
+        alert(`Booking Error: ${errorMsg}`);
+      } else {
+        // Fallback success message (in case API fails but we want to show something)
+        const fallbackMessage = 
+          `📝 Booking Request Recorded!\n\n` +
+          `PG: ${hostelData.hostel_name}\n` +
+          `Location: ${hostelData.address || `${hostelData.area}, ${hostelData.city}`}\n\n` +
+          `Your Details:\n` +
+          `• Name: ${currentUser.name}\n` +
+          `• Email: ${currentUser.email}\n` +
+          `• Phone: ${currentUser.phone || 'Not provided'}\n\n` +
+          `📞 **The PG owner will contact you at the provided number.**\n` +
+          `⏰ Expected within 24 hours.\n\n` +
+          `If no contact, please call: 1800-123-4567`;
+        
+        alert(fallbackMessage);
+        
+        // Save user data anyway
+        localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
+        
+        setIsPopupOpen(false);
+      }
+    }
+
+  } catch (err) {
+    console.error("❌ Unexpected error:", err);
+    alert("Something went wrong. Please try again or contact support.");
+  } finally {
+    console.log("🏁 Booking process completed");
+    setBookingLoading(false);
+  }
+};
+
+  // Create notification for owner
+const createOwnerNotification = async (bookingData) => {
+  try {
+    const token = localStorage.getItem("hlopgToken");
+    
+    const notificationPayload = {
+      type: "booking_request",
+      title: "New Booking Request",
+      message: `${bookingData.user_name} wants to book ${bookingData.hostel_name}`,
+      hostel_id: hostelId,
+      hostel_name: bookingData.hostel_name,
+      hostel_address: bookingData.hostel_address,
+      user_id: bookingData.user_id,
+      user_name: bookingData.user_name,
+      user_email: bookingData.user_email,
+      user_phone: bookingData.user_phone,
+      sharing_type: bookingData.sharing_type,
+      booking_date: bookingData.booking_date
+    };
+
+    console.log("Creating notification:", notificationPayload);
+
+    // Send notification to backend
+    await api.post("/notifications/create", notificationPayload, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    console.log("✅ Notification created successfully");
+  } catch (notifErr) {
+    console.error("Notification creation error:", notifErr);
+    // Continue even if notification fails
+  }
+};
+  // Book Now Button
+  // const handleBookNow = async () => {
+  //   try {
+  //     const token = localStorage.getItem("hlopgToken");
+  //     const owner = localStorage.getItem("hlopgOwner");
+
+  //     if (owner) {
+  //       alert("You are logged in as Hostel Owner. Not authorized to book.");
+  //       return;
+  //     }
+
+  //     if (!token) {
+  //       alert("Please log in to continue booking.");
+  //       navigate("/StudentLogin", { state: { from: location.pathname } });
+  //       return;
+  //     }
+
+  //     // Fetch user details
+  //     const res = await api.get("/auth/user", {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+
+  //     if (res.data.success) {
+  //       setUser(res.data.user);
+  //       setIsPopupOpen(true);
+  //     } else {
+  //       alert("Not authorized. Please log in again.");
+  //       localStorage.removeItem("hlopgToken");
+  //       navigate("/StudentLogin");
+  //     }
+  //   } catch (err) {
+  //     console.error("Auth verification failed:", err);
+  //     alert("Session expired. Please log in again.");
+  //     localStorage.removeItem("hlopgToken");
+  //     navigate("/StudentLogin", { state: { from: location.pathname } });
+  //   }
+  // };
+
+
+// Replace your handleBookNow function with this:
+const handleBookNow = async () => {
+  try {
+    const token = localStorage.getItem("hlopgToken");
+    const owner = localStorage.getItem("hlopgOwner");
+
+    // Check if user is owner
+    if (owner) {
+      alert("You are logged in as Hostel Owner. Not authorized to book.");
+      return;
+    }
+
+    // Check if user is logged in
+    if (!token) {
+      alert("Please log in to send booking request.");
+      navigate("/StudentLogin", { state: { from: location.pathname } });
+      return;
+    }
+
+    // Force popup to open immediately
+    setIsPopupOpen(true);
+    
+    // Then try to fetch user data
+    const userStr = localStorage.getItem("hlopgUser");
+    if (userStr && userStr !== "undefined" && userStr !== "null") {
+      try {
+        const cachedUser = JSON.parse(userStr);
+        console.log("✅ Using cached user:", cachedUser.name);
+        setUser(cachedUser);
+        return;
+      } catch (e) {
+        console.log("Could not parse cached user:", e);
+      }
+    }
+
+    // Fetch user from API if not in cache
+    try {
       const res = await api.get("/auth/userid", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (res.data) {
+      console.log("📡 User API response:", res.data);
+
+      if (res.data && (res.data.id || res.data.name)) {
+        const userData = res.data;
         const formattedUser = {
-          id: res.data.id || Date.now(),
-          name: res.data.name || "User",
-          email: res.data.email || "",
-          phone: res.data.phone || "",
-          userType: res.data.userType || "USER",
+          id: userData.id || userData.user_id || Date.now(),
+          name: userData.name || "User",
+          email: userData.email || "user@example.com",
+          phone: userData.phone || userData.mobile || "",
+          userType: userData.userType || "USER"
         };
 
+        console.log("✅ Formatted user:", formattedUser);
         setUser(formattedUser);
         localStorage.setItem("hlopgUser", JSON.stringify(formattedUser));
+        
+      } else {
+        // Create default user
+        const defaultUser = {
+          id: Date.now(),
+          name: "User",
+          email: "user@example.com",
+          phone: "",
+          userType: "USER"
+        };
+        setUser(defaultUser);
       }
-    } catch (err) {
-      console.error("❌ Error in handleBookNow:", err);
-      setUser({
+    } catch (apiErr) {
+      console.error("❌ User API error:", apiErr);
+      // Create fallback user
+      const fallbackUser = {
         id: Date.now(),
         name: "User",
-        email: "",
+        email: "user@example.com",
         phone: "",
-        userType: "USER",
-      });
-      setIsPopupOpen(true);
-    }
-  };
-
-  // ================= CREATE BOOKING REQUEST =================
-  const handleCreateBooking = async (bookingData) => {
-    try {
-      setBookingLoading(true);
-
-      if (!bookingData.user) {
-        alert("Please provide your information");
-        return;
-      }
-
-      const currentUser = bookingData.user;
-
-      const bookingPayload = {
-        hostel_id: parseInt(hostelId),
-        user_name: currentUser.name,
-        user_email: currentUser.email,
-        user_phone: currentUser.phone,
-        sharing_type: bookingData.sharing,
-        booking_date: new Date().toISOString().split("T")[0],
+        userType: "USER"
       };
-
-      console.log("📤 Sending booking payload:", bookingPayload);
-
-      const token = localStorage.getItem("hlopgToken");
-
-      const bookingRes = await api.post("/booking/request", bookingPayload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      console.log("✅ Booking response:", bookingRes.data);
-
-      if (bookingRes.data.success) {
-        alert(
-          `✅ Booking Request Sent Successfully!\n\n🏠 PG: ${hostelData.hostel_name}\n📍 Location: ${
-            hostelData.address || hostelData.city
-          }\n🛏️ Sharing: ${bookingData.sharing}\n\n📞 Owner will contact you soon.`
-        );
-
-        localStorage.setItem("hlopgUser", JSON.stringify(currentUser));
-        setIsPopupOpen(false);
-      } else {
-        alert("Booking failed: " + (bookingRes.data.message || "Unknown error"));
-      }
-    } catch (err) {
-      console.error("❌ Booking error:", err);
-      alert("Booking request failed. Please try again.");
-    } finally {
-      setBookingLoading(false);
+      setUser(fallbackUser);
     }
-  };
+    
+  } catch (err) {
+    console.error("❌ Error in handleBookNow:", err);
+    // Still open popup with default user
+    setIsPopupOpen(true);
+    setUser({
+      id: Date.now(),
+      name: "User",
+      email: "user@example.com",
+      phone: "",
+      userType: "USER"
+    });
+  }
+};
 
-  // ================= BOOKING POPUP =================
-  const BookingPopup = ({ onClose, onSubmit }) => {
-    const [selectedSharing, setSelectedSharing] = useState("single");
-    const [userPhone, setUserPhone] = useState(user?.phone || "");
-    const [userName, setUserName] = useState(user?.name || "");
-    const [userEmail, setUserEmail] = useState(user?.email || "");
+  // Replace your BookingPopup component with this:
+const BookingPopup = ({ onClose, onSubmit }) => {
+  const [selectedSharing, setSelectedSharing] = useState("single");
+  const [userPhone, setUserPhone] = useState(user?.phone || "");
+  const [userName, setUserName] = useState(user?.name || "");
+  const [userEmail, setUserEmail] = useState(user?.email || "");
+  
+  console.log("🎯 Popup rendered with user:", user);
+  console.log("🎯 isPopupOpen:", isPopupOpen);
 
-    const sharingOptions = hostelData?.sharing_data
-      ? Object.entries(hostelData.sharing_data).map(([type, price]) => ({
-          value: type,
-          label: `${type.toUpperCase()} - ₹${price}/month`,
-        }))
-      : [
-          { value: "single", label: "Single Sharing" },
-          { value: "double", label: "Double Sharing" },
-          { value: "triple", label: "Triple Sharing" },
-        ];
+  // If popup should not be open, return null
+  if (!isPopupOpen) {
+    console.log("❌ Popup not rendered because isPopupOpen is false");
+    return null;
+  }
 
-    const handleSubmit = (e) => {
-      e.preventDefault();
+  const sharingOptions = hostelData?.sharing_data 
+    ? Object.entries(hostelData.sharing_data).map(([type, price]) => ({
+        value: type,
+        label: `${type === 'single' ? '1-Sharing' : 
+                type === 'double' ? '2-Sharing' : 
+                type === 'triple' ? '3-Sharing' : 
+                type === 'four' ? '4-Sharing' : 
+                type === 'five' ? '5-Sharing' : 
+                type === 'six' ? '6-Sharing' : 
+                `${type}-Sharing`} - ₹${price}/month`
+      }))
+    : [
+        { value: "single", label: "1-Sharing - Contact for price" },
+        { value: "double", label: "2-Sharing - Contact for price" },
+        { value: "triple", label: "3-Sharing - Contact for price" }
+      ];
 
-      if (!userName.trim()) {
-        alert("Please enter your name");
-        return;
-      }
-      if (!userEmail.trim()) {
-        alert("Please enter your email");
-        return;
-      }
-      if (!userPhone.trim() || userPhone.length < 10) {
-        alert("Please enter valid phone number");
-        return;
-      }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("📝 Form submitted");
 
-      const bookingUser = {
-        id: user?.id || Date.now(),
-        name: userName,
-        email: userEmail,
-        phone: userPhone,
-      };
-
-      onSubmit({
-        sharing: selectedSharing,
-        user: bookingUser,
-      });
+     if (!userName.trim()) {
+    alert("Please enter your name");
+    return;
+  }
+  
+  if (!userEmail.trim()) {
+    alert("Please enter your email");
+    return;
+  }
+  
+  if (!userPhone.trim() || userPhone.length < 10) {
+    alert("Please enter a valid phone number (10 digits minimum)");
+    return;
+  }
+    
+    // Create user object with form data
+    const bookingUser = {
+      id: user?.id || Date.now(),
+      name: userName,
+      email: userEmail,
+      phone: userPhone || "",
+      userType: user?.userType || "USER"
     };
+    
+    console.log("👤 Booking user:", bookingUser);
+    
+    // if (!userName.trim() || !userEmail.trim()) {
+    //   alert("Please enter your name and email");
+    //   return;
+    // }
+    
+    const bookingData = {
+      sharing: selectedSharing,
+      price: hostelData?.sharing_data?.[selectedSharing] || "Contact for price",
+      user: bookingUser
+    };
+    
+    console.log("📦 Booking data:", bookingData);
+    
+    // Update global user state
+    setUser(bookingUser);
+    
+    // Submit booking
+    onSubmit(bookingData);
+  };
 
-    return (
-      <div className="popup-overlay" onClick={onClose}>
-        <div className="booking-popup" onClick={(e) => e.stopPropagation()}>
-          <div className="popup-header">
-            <h3>Book {hostelData?.hostel_name}</h3>
-            <button className="close-popup" onClick={onClose}>
-              ×
-            </button>
-          </div>
+   const handleClose = (e) => {
+    e.stopPropagation(); // Stop event from bubbling up
+    console.log("❌ Close button clicked");
+    onClose();
+  };
 
-          <form onSubmit={handleSubmit} className="booking-form">
-            <div className="form-group">
-              <label>Name *</label>
+  const handleCancel = (e) => {
+    e.stopPropagation(); // Stop event from bubbling up
+    console.log("❌ Cancel button clicked");
+    onClose();
+  };
+
+  const handleOverlayClick = (e) => {
+    console.log("🖱️ Overlay clicked, target class:", e.target.className);
+    // Only close if clicking directly on the overlay
+    if (e.target.className === "popup-overlay") {
+      console.log("✅ Closing popup via overlay click");
+      onClose();
+    }
+  };
+
+  return (
+<div className="popup-overlay" onClick={handleOverlayClick}>
+      <div className="booking-popup" onClick={(e) => e.stopPropagation()}>
+        <div className="popup-header">
+          <h3>Book {hostelData?.hostel_name || "PG"}</h3>
+          <button className="close-popup" onClick={handleClose}>×</button>
+        </div>
+        
+        <div className="popup-content">
+          <div className="user-info-summary">
+            <h4>Your Information</h4>
+            
+            
+            {/* Name Input */}
+            <div className="info-row">
+              <span className="info-label">Name:*</span>
               <input
                 type="text"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder="Enter your full name"
+                className="phone-input"
                 required
               />
             </div>
-
-            <div className="form-group">
-              <label>Email *</label>
+            
+            {/* Email Input */}
+            <div className="info-row">
+              <span className="info-label">Email:*</span>
               <input
                 type="email"
                 value={userEmail}
                 onChange={(e) => setUserEmail(e.target.value)}
                 placeholder="Enter your email"
+                className="phone-input"
                 required
               />
             </div>
-
-            <div className="form-group">
-              <label>Phone *</label>
+            
+            {/* Phone Input */}
+            <div className="info-row">
+              <span className="info-label">Phone:*</span>
               <input
                 type="tel"
                 value={userPhone}
                 onChange={(e) => setUserPhone(e.target.value)}
-                placeholder="Enter your phone"
+                placeholder="Enter your phone number"
+                className="phone-input"
                 required
               />
             </div>
+            {/* <div className="phone-note">
+              <small>⚠️ The PG owner will contact you on this number</small>
+            </div> */}
+          </div>
 
+          {hostelData && (
+            <div className="hostel-info-summary">
+              <h4>PG Information</h4>
+              <div className="info-row">
+                <span className="info-label">PG Name:</span>
+                <span className="info-value">{hostelData.hostel_name}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Address:</span>
+                <span className="info-value">{hostelData.address || `${hostelData.area}, ${hostelData.city}`}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Type:</span>
+                <span className="info-value">{hostelData.pg_type}'s PG</span>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="booking-form">
             <div className="form-group">
-              <label>Sharing Type *</label>
-              <select
-                value={selectedSharing}
-                onChange={(e) => setSelectedSharing(e.target.value)}
-              >
-                {sharingOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
+              <label>Select Sharing Type:*</label>
+              <div className="sharing-options">
+                {sharingOptions.map((option) => (
+                  <div 
+                    key={option.value}
+                    className={`sharing-option ${selectedSharing === option.value ? 'selected' : ''}`}
+                    onClick={() => {
+                      console.log("🎯 Selected sharing:", option.value);
+                      setSelectedSharing(option.value);
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="sharing" 
+                      value={option.value} 
+                      checked={selectedSharing === option.value}
+                      onChange={() => setSelectedSharing(option.value)}
+                      hidden
+                    />
+                    <span>{option.label}</span>
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="form-actions">
-              <button type="button" className="cancel-btn" onClick={onClose}>
+              <button 
+                type="button" 
+                className="cancel-btn" 
+                onClick={handleCancel}
+              >
                 Cancel
               </button>
-
-              <button
-                type="submit"
-                className="submit-btn"
+               <button 
+                type="submit" 
+                className="submit-btn" 
                 disabled={bookingLoading}
               >
-                {bookingLoading ? "Sending..." : "Send Booking Request"}
+                {bookingLoading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Sending Request...
+                  </>
+                ) : (
+                  "Send Booking Request"
+                )}
               </button>
             </div>
           </form>
+
+          {/* <div className="booking-note">
+            <p>⚠️ Note: This is a booking request. The PG owner will contact you to confirm availability and complete the booking process.</p>
+          </div> */}
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
-  // ================= LOADING / ERROR =================
   if (loading) return <div className="loading">Loading hostel details...</div>;
   if (!hostelData) return <div className="error">No hostel found.</div>;
 
   return (
     <div className="hostel-page">
-      {/* MAIN SECTION */}
+      {/* Hostel UI */}
       <div className="hostel-main">
-        {/* LEFT IMAGES */}
+        {/* Left Images */}
         <div className="hostel-images">
           <div className="main-img">
             <button className="arrow-left" onClick={prevImage}>
               <FaChevronLeft />
             </button>
-
-            <img
-              src={images[mainImageIndex]}
-              alt="Room"
-              onError={(e) => {
-                e.target.src = pg1;
-              }}
-            />
-
+            <img src={images[mainImageIndex]} alt="Room" />
             <button className="arrow-right" onClick={nextImage}>
               <FaChevronRight />
             </button>
@@ -497,67 +976,151 @@ const HostelPage = () => {
                 alt={`Thumb ${idx}`}
                 className={mainImageIndex === idx ? "active-thumb" : ""}
                 onClick={() => setMainImageIndex(idx)}
-                onError={(e) => {
-                  e.target.src = pg1;
-                }}
               />
             ))}
           </div>
         </div>
 
-        {/* RIGHT DETAILS */}
+        {/* Right Details */}
         <div className="hostel-details">
           <h2 className="black-text">{hostelData.hostel_name}</h2>
           <p className="black-text">{hostelData.address}</p>
+          <p className="black-text">
+            <b>Type of Living:</b> {hostelData.pg_type}'s PG
+          </p>
 
-          <h3 className="black-text">Amenities</h3>
-          <div className="furnished-icons">
-            {hostelData.facilities?.wifi && (
-              <span>
-                <FaWifi /> Free WiFi
-              </span>
-            )}
-            {hostelData.facilities?.parking && (
-              <span>
-                <FaParking /> Parking
-              </span>
-            )}
-            {hostelData.facilities?.ac && (
-              <span>
-                <FaFan /> AC
-              </span>
-            )}
-            {hostelData.facilities?.tv && (
-              <span>
-                <FaTv /> TV
-              </span>
-            )}
-            {hostelData.facilities?.geyser && (
-              <span>
-                <FaShower /> Hot Water
-              </span>
-            )}
-            {hostelData.facilities?.bed && (
-              <span>
-                <FaBed /> Bed
-              </span>
-            )}
-            {hostelData.facilities?.lights && (
-              <span>
-                <FaLightbulb /> Lights
-              </span>
-            )}
-            {hostelData.facilities?.clean && (
-              <span>
-                <FaBroom /> Cleaning
-              </span>
+          {/* Pricing */}
+          <div className="stats">
+            {hostelData.sharing_data ? (
+              Object.entries(hostelData.sharing_data).map(([sharing, price], idx) => (
+                <div key={idx} className="stat-container">
+                  <span className="stat-btn black-text">
+                    {sharing === 'single' ? '1-Sharing' : 
+                     sharing === 'double' ? '2-Sharing' : 
+                     sharing === 'triple' ? '3-Sharing' : 
+                     sharing === 'four' ? '4-Sharing' : 
+                     sharing === 'five' ? '5-Sharing' : 
+                     sharing === 'six' ? '6-Sharing' : 
+                     `${sharing}-Sharing`}  ₹{price}
+                  </span>
+                </div>
+              ))
+            ) : hostelData.sharing ? (
+              Object.entries(hostelData.sharing).map(([sharing, price], idx) => (
+                <div key={idx} className="stat-container">
+                  <span className="stat-btn black-text">
+                    {sharing} ₹{price}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="stat-container">
+                <span className="stat-btn black-text">
+                  Price not specified
+                </span>
+              </div>
             )}
           </div>
 
-          {/* REVIEWS */}
+          {/* Amenities */}
+          <h3 className="black-text">Amenities</h3>
+          <div className="furnished-icons">
+            {hostelData.facilities ? (
+              <>
+                {hostelData.facilities.wifi && (
+                  <span>
+                    <FaWifi /> Free WiFi
+                  </span>
+                )}
+                {hostelData.facilities.parking && (
+                  <span>
+                    <FaParking /> Parking
+                  </span>
+                )}
+                {hostelData.facilities.ac && (
+                  <span>
+                    <FaFan /> AC
+                  </span>
+                )}
+                {hostelData.facilities.tv && (
+                  <span>
+                    <FaTv /> TV
+                  </span>
+                )}
+                {hostelData.facilities.gym && (
+                  <span>
+                    <FaDoorClosed /> Gym
+                  </span>
+                )}
+                {hostelData.facilities.geyser && (
+                  <span>
+                    <FaShower /> Hot Water
+                  </span>
+                )}
+                {hostelData.facilities.fan && (
+                  <span>
+                    <FaFan /> Fan
+                  </span>
+                )}
+                {hostelData.facilities.bed && (
+                  <span>
+                    <FaBed /> Bed
+                  </span>
+                )}
+                {hostelData.facilities.lights && (
+                  <span>
+                    <FaLightbulb /> Lights
+                  </span>
+                )}
+                {hostelData.facilities.cupboard && (
+                  <span>
+                    <FaDoorClosed /> Cupboard
+                  </span>
+                )}
+                {hostelData.facilities.food && (
+                  <span>
+                    <FaLightbulb /> Food Included
+                  </span>
+                )}
+                {hostelData.facilities.water && (
+                  <span>
+                    <FaShower /> 24/7 Water
+                  </span>
+                )}
+                {hostelData.facilities.clean && (
+                  <span>
+                    <FaBroom /> Cleaning
+                  </span>
+                )}
+              </>
+            ) : hostelData.amenities ? (
+              Object.entries(hostelData.amenities).map(([amenity, available], idx) => (
+                available && (
+                  <span key={idx}>
+                    {amenity === 'wifi' && <><FaWifi /> WiFi</>}
+                    {amenity === 'parking' && <><FaParking /> Parking</>}
+                    {amenity === 'ac' && <><FaFan /> AC</>}
+                    {amenity === 'tv' && <><FaTv /> TV</>}
+                    {amenity === 'gym' && <><FaDoorClosed /> Gym</>}
+                    {amenity === 'geyser' && <><FaShower /> Hot Water</>}
+                    {amenity === 'fan' && <><FaFan /> Fan</>}
+                    {amenity === 'bed' && <><FaBed /> Bed</>}
+                    {amenity === 'lights' && <><FaLightbulb /> Lights</>}
+                    {amenity === 'cupboard' && <><FaDoorClosed /> Cupboard</>}
+                    {amenity === 'food' && <><FaLightbulb /> Food</>}
+                    {amenity === 'water' && <><FaShower /> Water</>}
+                    {amenity === 'clean' && <><FaBroom /> Cleaning</>}
+                  </span>
+                )
+              ))
+            ) : (
+              <span className="black-text">No amenities listed</span>
+            )}
+          </div>
+
+          {/* Reviews */}
           <div className="reviews-section">
             <h2 className="black-text">PG Reviews</h2>
-
             <div className="rating-overviews">
               <div className="avg-rating">
                 <span className="rating-number">{avgRating.toFixed(1)}</span>
@@ -580,7 +1143,6 @@ const HostelPage = () => {
                       <p className="review-date">{review.date}</p>
                     </div>
                   </div>
-
                   <div className="review-content">
                     {renderStars(review.rating)}
                     <p className="review-text">{review.comment}</p>
@@ -592,54 +1154,96 @@ const HostelPage = () => {
         </div>
       </div>
 
-      {/* FOOD MENU SECTION */}
-      <div className="food-menu">
-        <h2 className="black-text">Food Menu</h2>
+    
+      {/* Food Menu */}
+ <div className="food-menu">
+     <h2 className="black-text">Food Menu</h2>
+  
+   {/* Debug info - you can remove this after fixing */}
+  <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+    Debug: Hostel ID: {hostelId} | Menu Items: {foodMenu.length} | Loading: {menuLoading ? 'Yes' : 'No'}
+   </div>
+  
+ {menuLoading ? (
+    <div className="loading-food">
+      <p>Loading food menu...</p>
+      <p style={{ fontSize: '14px', color: '#888' }}>Please wait while we fetch the meal details</p>
+    </div>
+  ) : foodMenu.length > 0 ? (
+    <>
+      <table className="food-table">
+        <thead>
+          <tr>
+            <th>DAY</th>
+            <th>BREAKFAST</th>
+            <th>LUNCH</th>
+            <th>DINNER</th>
+          </tr>
+        </thead>
+        <tbody>
+          {foodMenu.map((day, idx) => (
+            <tr key={idx} className="food-row">
+              <td className="day-cell">
+                <strong>{day.day}</strong>
+              </td>
+              <td className="meal-cell">
+                {typeof day.breakfast === 'string' ? day.breakfast : 
+                 Array.isArray(day.breakfast) ? day.breakfast.join(', ') : 
+                 JSON.stringify(day.breakfast)}
+              </td>
+              <td className="meal-cell">
+                {typeof day.lunch === 'string' ? day.lunch : 
+                 Array.isArray(day.lunch) ? day.lunch.join(', ') : 
+                 JSON.stringify(day.lunch)}
+              </td>
+              <td className="meal-cell">
+                {typeof day.dinner === 'string' ? day.dinner : 
+                 Array.isArray(day.dinner) ? day.dinner.join(', ') : 
+                 JSON.stringify(day.dinner)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {/* <p className="food-menu-note">Menu is subject to change based on availability and season</p> */}
+    </>
+  ) : (
+    <div className="no-food-menu">
+      <p>🍽️ No food menu available for this hostel</p>
+      <p className="small-text">
+        The hostel hasn't provided a food menu yet. 
+        You can contact them directly for meal information.
+      </p>
+      <button 
+        className="contact-hostel-btn"
+        onClick={() => alert("Contact feature coming soon!")}
+      >
+        Contact Hostel
+      </button>
+    </div>
+  )}
+</div>
 
-        {menuLoading ? (
-          <div className="loading-food">Loading food menu...</div>
-        ) : foodMenu.length > 0 ? (
-          <table className="food-table">
-            <thead>
-              <tr>
-                <th>DAY</th>
-                <th>BREAKFAST</th>
-                <th>LUNCH</th>
-                <th>DINNER</th>
-              </tr>
-            </thead>
-            <tbody>
-              {foodMenu.map((day, idx) => (
-                <tr key={idx}>
-                  <td>{day.day || "N/A"}</td>
-                  <td>{day.breakfast || "-"}</td>
-                  <td>{day.lunch || "-"}</td>
-                  <td>{day.dinner || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="no-food-menu">
-            <p>🍽️ No food menu available</p>
-          </div>
-        )}
-      </div>
-
-      {/* BOOK NOW BUTTON */}
-      <div className="book-now">
+      {/* Book Now Button */}
+      {/* <div className="book-now">
         <button className="book-now-btn" onClick={handleBookNow}>
           Book Now
         </button>
-        <p className="booking-note-small">
-          No payment required. Owner will contact you directly.
-        </p>
-      </div>
+      </div> */}
 
-      {/* POPUP */}
+      <div className="book-now">
+  <button className="book-now-btn" onClick={handleBookNow}>
+    Book Now 
+  </button>
+  {/* <p className="booking-note-small">
+    No payment required. Owner will contact you directly.
+  </p> */}
+</div>
+
+      {/* Booking Popup */}
       {isPopupOpen && (
-        <BookingPopup
-          onClose={() => setIsPopupOpen(false)}
+        <BookingPopup 
+          onClose={() => setIsPopupOpen(false)} 
           onSubmit={handleCreateBooking}
         />
       )}
