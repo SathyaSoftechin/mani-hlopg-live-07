@@ -37,7 +37,7 @@ const UploadPG = ({ user }) => {
   // location data
   const locationData = {
       "Andhra Pradesh": {
-    "Visakhapatnam": ["Gajuwaka", "MVP Colony", "Dwarakanagar", "Siripuram"],
+    "Vizag": ["Gajuwaka", "MVP Colony", "Dwarakanagar", "Siripuram"],
     "Vijayawada": ["Benz Circle", "Poranki", "Gunadala", "Patamata"],
     "Guntur": ["Arundelpet", "Lakshmipuram", "Brodipet"]
   },
