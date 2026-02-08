@@ -39,21 +39,17 @@ function Home() {
   const [arrowVisibility, setArrowVisibility] = useState([]);
   const [hostels, setHostels] = useState([]);
   const [likedPgIds, setLikedPgIds] = useState([]);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [selectedHostelId, setSelectedHostelId] = useState(null);
-  const [authType, setAuthType] = useState("login");
 
-  /* ---------------- Image URL Helper (SAFE) ---------------- */
+  /* ================= IMAGE URL FIX ================= */
   const getFullImageUrl = (imagePath) => {
     if (!imagePath) return defaultPGImg;
     if (imagePath.startsWith("http")) return imagePath;
-    if (imagePath.startsWith("/uploads")) {
+    if (imagePath.startsWith("/uploads"))
       return `https://hlopg.com${imagePath}`;
-    }
     return `https://hlopg.com/uploads/${imagePath}`;
   };
 
-  /* ---------------- Fetch Hostels ---------------- */
+  /* ================= FETCH HOSTELS ================= */
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -61,44 +57,36 @@ function Home() {
 
         if (res.data.success && Array.isArray(res.data.hostels)) {
           const processed = res.data.hostels.map((h) => {
-            let imageUrl = defaultPGImg;
+            let image = defaultPGImg;
 
             try {
               if (Array.isArray(h.images) && h.images.length > 0) {
-                imageUrl = getFullImageUrl(h.images[0]);
+                image = getFullImageUrl(h.images[0]);
               } else if (typeof h.images === "string") {
                 const parsed = JSON.parse(h.images);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  imageUrl = getFullImageUrl(parsed[0]);
-                }
+                if (parsed?.length) image = getFullImageUrl(parsed[0]);
               } else if (h.img) {
-                imageUrl = getFullImageUrl(h.img);
+                image = getFullImageUrl(h.img);
               }
-            } catch {
-              imageUrl = defaultPGImg;
-            }
+            } catch {}
 
             return {
               ...h,
               id: h.hostel_id || h.id,
-              displayImage: imageUrl,
+              displayImage: image,
             };
           });
 
           setHostels(processed);
-        } else {
-          setHostels([]);
         }
       } catch (err) {
-        console.error("Error fetching hostels:", err);
-        setHostels([]);
+        console.error(err);
       }
     };
-
     fetchData();
   }, []);
 
-  /* ---------------- Cities ---------------- */
+  /* ================= CITIES ================= */
   const [cities, setCities] = useState([
     { name: "Hostel's in Hyderabad", bg: hyderabadBg, pgList: [] },
     { name: "Hostel's in Chennai", bg: chennaiBg, pgList: [] },
@@ -127,8 +115,9 @@ function Home() {
             location: h.area || h.city || "Unknown",
             city: h.city,
             rating: h.rating || 4.5,
-            sharing: "Multiple Sharing",
-            facilities: h.facilities || [],
+            sharing: h.sharing_data || "Multiple Sharing",
+            price: h.price || h.rent || "5000",
+            facilities: h.facilities || {},
             pg_type: h.pg_type || "Hostel",
           })),
         };
@@ -136,43 +125,70 @@ function Home() {
     );
   }, [hostels]);
 
-  /* ---------------- Scroll Logic ---------------- */
-  const updateArrowVisibility = (index) => {
-    const el = pgRefs.current[index];
-    if (!el) return;
-
-    setArrowVisibility((prev) => {
-      const copy = [...prev];
-      copy[index] = {
-        left: el.scrollLeft > 0,
-        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
-      };
-      return copy;
-    });
+  /* ================= FACILITY ICON FALLBACK ================= */
+  const getFacilityIcon = (name) => {
+    const map = {
+      wifi: <FaWifi />,
+      parking: <FaCar />,
+      ac: <FaSnowflake />,
+      tv: <FaTv />,
+      gym: <FaDumbbell />,
+      geyser: <FaShower />,
+      fan: <FaFan />,
+      bed: <FaBed />,
+      lights: <FaLightbulb />,
+      cupboard: <FaChair />,
+      food: <FaUtensils />,
+      clean: <FaBroom />,
+    };
+    return map[name?.toLowerCase()] || <FaHome />;
   };
 
-  const scrollPG = (index, dir) => {
-    const el = pgRefs.current[index];
-    if (!el) return;
+  /* ================= APP DOWNLOAD POPUP ================= */
+  const [showPopup, setShowPopup] = useState(false);
 
-    el.scrollBy({
-      left: dir === "next" ? el.clientWidth : -el.clientWidth,
-      behavior: "smooth",
-    });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      document.body.classList.add("no-scroll");
+      setShowPopup(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
-    setTimeout(() => updateArrowVisibility(index), 300);
+  const closePopup = () => {
+    document.body.classList.remove("no-scroll");
+    setShowPopup(false);
   };
 
-  /* ---------------- Render ---------------- */
+  /* ================= RENDER ================= */
   return (
     <div className="home">
-      {/* ===== App Popup ===== */}
-      {showAuthModal && (
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          authType={authType}
-        />
+      {/* ===== App Download Popup ===== */}
+      {showPopup && (
+        <div className="app-popup-overlay">
+          <div className="app-popup-card">
+            <button className="popup-close" onClick={closePopup}>✕</button>
+            <img src={logo} alt="logo" className="popup-app-img" />
+            <h2>
+              Download Our <span className="brand-text">HLOPG</span> Mobile App
+            </h2>
+            <p>Find hostels faster, easier & smarter.</p>
+            <div className="popup-buttons">
+              <a href={PLAYSTORE_LINK} target="_blank" rel="noreferrer">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+                  alt="Play Store"
+                />
+              </a>
+              <a href={APPSTORE_LINK} target="_blank" rel="noreferrer">
+                <img
+                  src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+                  alt="App Store"
+                />
+              </a>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ===== Hero ===== */}
@@ -190,83 +206,65 @@ function Home() {
         <div key={index} className="city-section">
           <div className="city-header">
             <h2>{city.name.replace("Hostel's in ", "")}</h2>
-            {city.pgList.length > 0 && (
-              <div
-                className="know-more-btn"
-                onClick={() =>
-                  navigate(
-                    `/city/${city.name.match(/in (\w+)/i)?.[1].toLowerCase()}`
-                  )
-                }
-              >
-                See More...
-              </div>
-            )}
           </div>
 
-          {city.pgList.length > 0 && (
-            <div className="pg-container">
-              <button
-                className={`arrow left ${
-                  arrowVisibility[index]?.left ? "show" : "hide"
-                }`}
-                onClick={() => scrollPG(index, "prev")}
-              >
-                <FaChevronLeft />
-              </button>
+          <div className="pg-container">
+            <div className="pg-scroll" ref={(el) => (pgRefs.current[index] = el)}>
+              <div className="pg-track">
+                {city.pgList.map((pg) => (
+                  <div key={pg.id} className="home-pg-card">
+                    <div className="pg-image">
+                      <img
+                        src={pg.img}
+                        alt={pg.name}
+                        onError={(e) => (e.currentTarget.src = defaultPGImg)}
+                      />
+                      <FaHeart className="wishlists unliked" />
+                    </div>
 
-              <button
-                className={`arrow right ${
-                  arrowVisibility[index]?.right ? "show" : "hide"
-                }`}
-                onClick={() => scrollPG(index, "next")}
-              >
-                <FaChevronRight />
-              </button>
-
-              <div
-                className="pg-scroll"
-                ref={(el) => (pgRefs.current[index] = el)}
-                onScroll={() => updateArrowVisibility(index)}
-              >
-                <div className="pg-track">
-                  {city.pgList.map((pg) => (
-                    <div key={pg.id} className="home-pg-card">
-                      <div className="pg-image">
-                        <img
-                          src={pg.img}
-                          alt={pg.name}
-                          onError={(e) => {
-                            e.currentTarget.src = defaultPGImg;
-                          }}
-                        />
-                        <FaHeart className="wishlists unliked" />
+                    <div className="pg-details">
+                      <div className="pg-header">
+                        <h3 className="pg-name">{pg.name}</h3>
+                        <div className="pg-rating">
+                          <FaStar className="star" />
+                          <span>{pg.rating}</span>
+                        </div>
                       </div>
 
-                      <div className="pg-details">
-                        <div className="pg-header">
-                          <h3 className="pg-name">{pg.name}</h3>
-                          <div className="pg-rating">
-                            <FaStar className="star" />
-                            <span>{pg.rating}</span>
-                          </div>
+                      <p className="pg-location">
+                        {pg.location}, {pg.city}
+                      </p>
+
+                      <div className="sharing-price-section">
+                        <div className="sharing-info">
+                          <FaUserFriends />
+                          <span>{pg.sharing}</span>
                         </div>
+                        <div className="price-tag">
+                          <span className="price">₹{pg.price}</span>
+                          <span className="per-month">/month</span>
+                        </div>
+                      </div>
 
-                        <p className="pg-location">
-                          {pg.location}, {pg.city}
-                        </p>
-
-                        <div className="pg-type-badge">
-                          <FaHome />
-                          <span>{pg.pg_type} PG</span>
+                      <div className="facilities-section">
+                        <h4 className="facilities-title">Facilities:</h4>
+                        <div className="facilities-grid">
+                          {Object.keys(pg.facilities).slice(0, 6).map((key) => (
+                            <div key={key} className="facility-item">
+                              <span className="facility-icon">
+                                {getFacilityIcon(key)}
+                              </span>
+                              <span className="facility-name">{key}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+          </div>
         </div>
       ))}
     </div>
