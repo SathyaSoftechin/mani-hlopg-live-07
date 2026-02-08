@@ -11,6 +11,7 @@
   margin-top: 80px;
 }
 
+
 .readonly {
   background-color: #f3f4f6;
   cursor: not-allowed;
@@ -27,14 +28,14 @@
   padding: 25px 15px;
   box-sizing: border-box;
   transition: all 0.3s ease;
-  align-items: center;
-  justify-content: flex-start;
+  align-items: center;          /* Center horizontally */
+  justify-content: flex-start;  /* Keep buttons below profile */
   position: sticky;
-  height: auto;
+ height: auto;
   max-height: calc(100vh - 120px);
-  border-radius: 12px;
-  margin-top: 20px;
-  box-shadow: 0px 4px 12px rgba(0,0,0,0.06);
+  border-radius: 10px;
+  margin-top:20px;
+  
 }
 
 .sidebar-preview {
@@ -43,40 +44,37 @@
   width: 100%;
 }
 
-/* Profile image circle */
 .sidebar-profile-image,
 .profile-image {
   width: 100px;
   height: 100px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid #e5e7eb;
+  border: 2px solid #ddd;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   transition: all 0.3s ease;
   margin: 0 auto;
 }
 
-/* Fix uploaded image */
+/* FIX: Ensure uploaded images fill the circle */
 .sidebar-profile-image img,
 .profile-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Changed from 'contain' to 'cover' */
   object-position: center;
   border-radius: 50%;
 }
 
-/* Greeting */
 .sidebar-greeting {
-  font-weight: 800;
+  font-weight: 700;
   font-size: 20px;
-  margin: 8px 0 20px 0;
+  margin: 1px 0 20px 0;
   text-align: center;
-  color: #111;
+  color: #333;
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
@@ -84,79 +82,37 @@
   animation: fadeGreeting 0.5s forwards;
 }
 
-/* Sidebar Buttons Premium */
 .sidebar button {
   border: 1px solid #e5e5e5;
-  padding: 14px 14px;
-  margin-bottom: 14px;
-  border-radius: 12px;
+  padding: 12px 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   text-align: left;
+  transition: all 0.3s ease;
   width: 100%;
-  background: #f9fafb;
-  color: #111;
-  font-weight: 700;
-
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  transition: all 0.35s ease-in-out;
 }
 
-/* Hover effect smooth premium */
 .sidebar button:hover {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0px 8px 18px rgba(59, 130, 246, 0.35);
-  border-color: #3b82f6;
+  background: #3b82f6;
 }
 
-/* Active button */
 .sidebar .active {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: white;
-  font-weight: 800;
-  border-color: #2563eb;
-  box-shadow: 0px 8px 18px rgba(37, 99, 235, 0.35);
-  transform: scale(1.02);
+  border-color: #3b82f6;
+  color: #3b82f6;
+  font-weight: 500;
+  background: #e6f0ff;
 }
 
-.sidebar .active:hover {
-  background: linear-gradient(135deg, #1d4ed8, #1e40af);
-  transform: translateY(-3px) scale(1.03);
-}
-
-/* Sidebar button icon smooth */
-.sidebar button svg {
-  font-size: 18px;
-  transition: 0.3s ease;
-}
-
-.sidebar button:hover svg {
-  transform: scale(1.2);
-}
-
-/* Logout Button Premium */
 .sidebar .logout {
-  margin-top: auto;
+ margin-top: auto; /* This pushes it to bottom */
   border-color: #f87171;
-  color: #dc2626;
-  background: #fff5f5;
+  color: #f87171;
+  background: #fff0f0;
   width: 100%;
-  font-weight: 900;
-  border-radius: 12px;
-  transition: all 0.35s ease-in-out;
-}
-
-.sidebar .logout:hover {
-  background: linear-gradient(135deg, #ff4b4b, #dc2626);
-  color: white;
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0px 8px 20px rgba(220, 38, 38, 0.4);
-  border-color: #dc2626;
+  /* Add margin to separate from other buttons */
+  margin-top: 10px;
 }
 
 /* ================== Main Content ================== */
@@ -164,16 +120,16 @@
   flex: 1;
   padding: 30px 40px;
   background: #fff;
-  border-radius: 12px;
+  border-radius: 10px;
   margin: 20px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
 .main-content h3 {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 20px;
-  color: #111;
+  color: #222;
 }
 
 /* ================== Info Section ================== */
@@ -182,7 +138,7 @@
   align-items: flex-start;
   gap: 40px;
   border: 1px solid #eee;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 30px;
   background: #fafafa;
 }
@@ -195,10 +151,9 @@
 }
 
 .change-btn {
-  color: #2563eb;
+  color: #3b82f6;
   font-size: 13px;
   cursor: pointer;
-  font-weight: 600;
   text-decoration: underline;
 }
 
@@ -219,13 +174,12 @@
   font-size: 13px;
   color: #555;
   margin-bottom: 4px;
-  font-weight: 600;
 }
 
 .form-group input {
   border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 11px 12px;
+  border-radius: 6px;
+  padding: 10px 12px;
   font-size: 14px;
   background: #fff;
   transition: 0.2s;
@@ -237,7 +191,6 @@
   box-shadow: 0 0 6px rgba(59,130,246,0.2);
 }
 
-/* ================== Aadhaar Section ================== */
 .aadhaar-section {
   width: 100%;
   margin-top: 20px;
@@ -253,7 +206,7 @@
   flex: 1;
   height: 130px;
   border: 1px solid #ddd;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fafafa;
   display: flex;
   align-items: center;
@@ -266,8 +219,6 @@
 
 .aadhaar-box:hover {
   border-color: #3b82f6;
-  transform: translateY(-3px);
-  box-shadow: 0px 8px 18px rgba(59, 130, 246, 0.2);
 }
 
 .aadhaar-box p {
@@ -287,6 +238,9 @@
   object-fit: cover;
 }
 
+/* ================== PG Cards ================== */
+ 
+
 /* ================== Payment Table ================== */
 .payment-table {
   width: 100%;
@@ -303,20 +257,18 @@
 /* ================== Buttons ================== */
 .save-btn {
   margin-top: 0px;
-  padding: 12px 22px;
+  padding: 10px 22px;
   border: none;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: #3b82f6;
   color: #fff;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 500;
   transition: 0.3s;
 }
 
 .save-btn:hover {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  transform: translateY(-2px);
-  box-shadow: 0px 6px 16px rgba(37, 99, 235, 0.3);
+  background: #2563eb;
 }
 
 .save-message {
@@ -325,11 +277,13 @@
   font-size: 13px;
 }
 
+
+
 /* ================== Terms Box ================== */
 .terms-box {
   border: 1px solid #ddd;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fafafa;
   font-size: 14px;
   color: #555;
@@ -352,7 +306,7 @@
 .modal {
   background: #fff;
   padding: 25px 30px;
-  border-radius: 12px;
+  border-radius: 10px;
   width: 320px;
   height: 180px;
   text-align: center;
@@ -380,27 +334,26 @@
   margin-top: 20px;
   display: flex;
   justify-content: space-between;
-  gap: 10px;
 }
 
 .modal-cancel,
 .modal-logout {
-  padding: 10px 16px;
-  border-radius: 10px;
+  padding: 8px 16px;
+  border-radius: 6px;
   border: none;
   cursor: pointer;
-  height: 45px;
-  width: 110px;
-  font-weight: 700;
+  height: 50px;
+  margin-top: 40px;
+  width: 100px;
 }
 
 .modal-cancel {
-  background: #e5e7eb;
-  color: #111;
+  background: #ddd;
+  color: #555;
 }
 
 .modal-logout {
-  background: linear-gradient(135deg, #ff4b4b, #dc2626);
+  background: #f87171;
   color: #fff;
 }
 
@@ -445,6 +398,40 @@
   }
 }
 
+/* ================== Responsive ================== */
+@media (max-width: 900px) {
+  .account-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 15px;
+    gap: 10px;
+    justify-content: flex-start;
+  }
+
+  .sidebar button {
+    flex: 1;
+    margin-right: 10px;
+  }
+
+  .main-content {
+    padding: 20px;
+    margin: 10px;
+  }
+
+  .info-section {
+    flex-direction: column;
+  }
+
+  .form-group {
+    width: 100%;
+  }
+}
+
 /* ================== Password Section ================== */
 .password-form .password-group {
   position: relative;
@@ -474,14 +461,14 @@
 }
 
 .password-rules p {
-  color: #f87171;
+  color: #f87171; /* red by default */
   font-size: 13px;
   margin: 2px 0;
 }
 
 .password-rules p.valid {
-  color: #22c55e;
-  font-weight: 600;
+  color: #22c55e; /* green when valid */
+  font-weight: 500;
 }
 
 .confirm-error {
@@ -494,7 +481,7 @@ input.invalid {
   border-color: #f87171;
 }
 
-/* ================== Verifying Screen ================== */
+
 .verifying-screen {
   display: flex;
   flex-direction: column;
@@ -504,7 +491,6 @@ input.invalid {
   font-size: 18px;
   color: #333;
 }
-
 .spinner {
   width: 45px;
   height: 45px;
@@ -514,7 +500,6 @@ input.invalid {
   animation: spin 1s linear infinite;
   margin-bottom: 10px;
 }
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -522,6 +507,9 @@ input.invalid {
 }
 
 /* ============= LIKED PG SECTION ============= */
+
+/* ============= LIKED PG SECTION ============= */
+
 .liked-pg-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -531,7 +519,7 @@ input.invalid {
 
 .liked-pg-card {
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 14px rgba(0,0,0,0.1);
   cursor: pointer;
@@ -567,8 +555,8 @@ input.invalid {
   top: 10px;
   right: 10px;
   background: rgba(255, 255, 255, 0.9);
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -594,8 +582,8 @@ input.invalid {
 .liked-pg-info h4 {
   margin: 0 0 8px 0;
   font-size: 1rem;
-  font-weight: 700;
-  color: #111;
+  font-weight: 600;
+  color: #333;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -624,7 +612,7 @@ input.invalid {
 
 .liked-price {
   font-size: 1.1rem;
-  font-weight: 900;
+  font-weight: bold;
   color: #3b82f6;
   margin: 0;
 }
@@ -633,7 +621,7 @@ input.invalid {
   text-align: center;
   padding: 40px 20px;
   background: #f9f9f9;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 2px dashed #ddd;
 }
 
@@ -650,17 +638,17 @@ input.invalid {
 .browse-hostels-btn {
   margin-top: 15px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: #3b82f6;
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 500;
   transition: background 0.3s ease;
 }
 
 .browse-hostels-btn:hover {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: #2563eb;
 }
 
 .loading-container {
@@ -669,48 +657,17 @@ input.invalid {
   color: #666;
 }
 
-/* ================== Responsive ================== */
-@media (max-width: 900px) {
-  .account-container {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 15px;
-    gap: 10px;
-    justify-content: flex-start;
-  }
-
-  .sidebar button {
-    flex: 1;
-    margin-right: 10px;
-  }
-
-  .main-content {
-    padding: 20px;
-    margin: 10px;
-  }
-
-  .info-section {
-    flex-direction: column;
-  }
-
-  .form-group {
-    width: 100%;
-  }
-}
-
 /* ================= MOBILE VIEW ONLY ================= */
 @media (max-width: 768px) {
+
+  /* ===== Account Container ===== */
   .account-container {
     flex-direction: column;
-    margin-top: 60px;
+    margin-top: 60px;       /* reduce top gap */
     padding-top: 10px;
   }
 
+  /* ===== Sidebar ===== */
   .sidebar {
     width: 100%;
     min-height: auto;
@@ -721,10 +678,11 @@ input.invalid {
     margin-top: 0;
     overflow-x: auto;
     gap: 10px;
-    border-radius: 10px;
+    border-radius: 10px ;
     margin-top: 20px;
   }
 
+  /* Hide profile preview in mobile */
   .sidebar-preview {
     display: none;
   }
@@ -732,27 +690,32 @@ input.invalid {
   .sidebar button {
     flex: 0 0 auto;
     white-space: nowrap;
-    padding: 12px 14px;
+    padding: 10px 14px;
     font-size: 13px;
     margin-bottom: 0;
     width: 350px;
   }
 
+  /* Logout button fix */
   .sidebar .logout {
     margin: 0;
     width: 350px;
   }
+ 
 
+  /* ===== Main Content ===== */
   .main-content {
     margin: 10px;
     padding: 16px;
-    border-radius: 10px;
+    border-radius: 8px;
+    
   }
 
   .main-content h3 {
     font-size: 16px;
   }
 
+  /* ===== Info Section ===== */
   .info-section {
     flex-direction: column;
     gap: 20px;
@@ -769,47 +732,55 @@ input.invalid {
     height: 80px;
   }
 
+  /* ===== Form ===== */
   .info-form {
     gap: 0px;
+   
+    
   }
 
   .form-group {
     width: 100%;
+   
   }
 
   .form-group input {
     font-size: 14px;
   }
 
+  /* ===== Aadhaar Section ===== */
   .aadhaar-boxes {
     flex-direction: column;
     gap: 12px;
+    
   }
 
   .aadhaar-box {
     height: 120px;
   }
 
+  /* ===== Buttons ===== */
   .save-btn {
     width: 100%;
     padding: 12px;
     font-size: 14px;
   }
 
+  /* ===== Password Section ===== */
   .password-input-wrapper span {
     font-size: 14px;
   }
 
+  /* ===== Modal ===== */
   .modal {
     width: 70%;
     padding: 20px;
   }
-
-  .modal-cancel,
-  .modal-logout {
+  .modal-cancel,.modal-logout{
     margin-top: 10px;
   }
 
+  /* ===== Liked PG Section ===== */
   .liked-pg-container {
     grid-template-columns: 1fr;
     gap: 15px;
@@ -827,13 +798,16 @@ input.invalid {
     font-size: 1rem;
   }
 
+  /* ===== No liked hostels ===== */
   .no-liked-hostels {
     padding: 30px 15px;
   }
 
+  /* ===== Spinner screen ===== */
   .verifying-screen {
     font-size: 16px;
     padding: 20px;
     text-align: center;
   }
+
 }
