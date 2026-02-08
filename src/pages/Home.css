@@ -144,19 +144,15 @@ body.no-scroll {
   font-family: "Inter", sans-serif;
   background: #ffffff;
   border-radius: 20px;
-  overflow: visible;
-  min-width: 260px !important;
+  min-width: 260px;
   max-width: 260px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: 0.3s ease;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
-   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  transform-origin: bottom;
+  cursor: pointer;
   position: relative;
   z-index: 1;
-  
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  will-change: transform;
 }
 
 .home-pg-card * {
@@ -165,8 +161,8 @@ body.no-scroll {
 
 
 .home-pg-card:hover {
-  transform: translateY(-14px) !important;
-  z-index: 10;
+  transform: translateY(-12px) !important;
+  z-index: 20;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18) !important;
 }
 
@@ -187,6 +183,7 @@ body.no-scroll {
   /* transition: transform 0.5s ease; */
   border-radius: 14px;          /* rounded image inside white */
   display: block;
+  transition: transform 0.45s ease;
 }
 
 .home-pg-card:hover .pg-image img {
@@ -195,11 +192,12 @@ body.no-scroll {
 
 .wishlists {
    position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 20px;
-  height: 20px;
+  top: 18px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -207,7 +205,7 @@ body.no-scroll {
   cursor: pointer;
   z-index: 5;
   color: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: transform 0.25s ease, background 0.25s ease;
 }
 
 .wishlists:hover {
@@ -220,17 +218,16 @@ body.no-scroll {
 }
 
 .wishlists.unliked {
-  color: white !important;
-  fill: white !important;
+  color: #ffffff !important; 
 }
 
 /* ================= Card Info ================= */
 .pg-details {
   font-family: "Inter", sans-serif;
-  padding: 10px 14px !important;
-  gap: 4px !important;
   display: flex;
   flex-direction: column;
+  padding: 12px 14px 14px !important;  
+  gap: 6px !important;
 }
 
 /* Name + Rating row */
@@ -277,29 +274,31 @@ body.no-scroll {
 }
 
 /* ================= Facilities (NEW Style) ================= */
-.facility-row {
-  margin-top: -10px !important;
-  display: flex;
-  justify-content: space-between;
-  margin: 10px 0;
+.facilities-section {
+  margin-top: 6px;
 }
 
-.facility-block {
+.facilities-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.facility-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  /* gap: 1px; */
-  font-size: 13px;
-  color: #444;
+  gap: 6px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  color: #555;
+  min-height: 30px;
 }
 
-.facilities-title{
-  margin-top: 0px;
-}
-
-.facility-block svg {
-  font-size: 18px;
-  color: #363636;
+.facility-icon {
+  font-size: 12px;
+  color: #007bff;
 }
 
 /* ================= Price Row ================= */
@@ -1030,3 +1029,30 @@ body.no-scroll {
     min-height: 500px;
   }
 }
+
+@media (max-width: 768px) {
+  .home-pg-card {
+    min-width: 240px;
+    max-width: 240px;
+  }
+
+  .home-pg-card:hover {
+    transform: translateY(-8px);
+  }
+
+  .facilities-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .home-pg-card {
+    min-width: 220px;
+    max-width: 220px;
+  }
+
+  .facilities-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
