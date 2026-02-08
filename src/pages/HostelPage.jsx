@@ -1,196 +1,153 @@
-// src/pages/HostelDetails.jsx
-
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import api from "../api";
 import "./HostelPage.css";
 
-// fallback images
-import pg1 from "../assets/pg1.jpg";
-import pg2 from "../assets/pg2.jpg";
-import pg3 from "../assets/pg3.jpg";
-import pg4 from "../assets/pg4.jpg";
-import pg5 from "../assets/pg5.jpg";
-
-const BASE_URL = "https://www.hlopg.com"; // IMPORTANT FIX
-
-const HostelDetails = () => {
+const HostelPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [hostel, setHostel] = useState(null);
-  const [images, setImages] = useState([pg1, pg2, pg3, pg4, pg5]);
-  const [mainImageIndex, setMainImageIndex] = useState(0);
   const [foodMenu, setFoodMenu] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ================= FETCH HOSTEL DETAILS =================
+  // ✅ default fallback image (from public folder)
+  const defaultImage = "/pg5.jpg";
+
   useEffect(() => {
     const fetchHostelDetails = async () => {
       try {
-        console.log("📤 GET /api/hostel/" + id);
+        setLoading(true);
 
-        const res = await api.get(`/hostel/${id}`);
-        console.log("✅ Hostel API Response:", res.data);
+        // ================== HOSTEL DETAILS ==================
+        const hostelRes = await api.get(`/hostel/${id}`);
+        console.log("🏠 Hostel Response:", hostelRes.data);
 
-        const data = res.data;
-
-        // ---------- IMAGE FIX ----------
-        let finalImages = [];
-
-        if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-          finalImages = data.images.map((img) => {
-            if (!img) return pg1;
-
-            if (img.startsWith("http")) return img;
-
-            if (img.startsWith("/uploads")) return `${BASE_URL}${img}`;
-
-            return `${BASE_URL}/uploads/${img}`;
-          });
-        } else if (data.img) {
-          const img = data.img;
-
-          if (img.startsWith("http")) finalImages = [img];
-          else if (img.startsWith("/uploads")) finalImages = [`${BASE_URL}${img}`];
-          else finalImages = [`${BASE_URL}/uploads/${img}`];
-        } else {
-          finalImages = [pg1, pg2, pg3, pg4, pg5];
+        if (hostelRes.data.success) {
+          setHostel(hostelRes.data.data);
         }
 
-        setHostel(data);
-        setImages(finalImages);
-        setMainImageIndex(0);
-      } catch (err) {
-        console.error("❌ Error fetching hostel details:", err);
+        // ================== FOOD MENU ==================
+        const foodRes = await api.get(`/hostel/food_menu/${id}`);
+        console.log("🍲 Food Menu Response:", foodRes.data);
+
+        if (foodRes.data.success) {
+          setFoodMenu(foodRes.data.data || []);
+        } else {
+          setFoodMenu([]);
+        }
+      } catch (error) {
+        console.log("❌ Error fetching hostel details:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchHostelDetails();
   }, [id]);
 
-  // ================= FETCH FOOD MENU =================
-  useEffect(() => {
-    const fetchFoodMenu = async () => {
-      try {
-        console.log("📤 GET /api/hostel/food_menu/" + id);
+  // ================== IMAGE URL HANDLER ==================
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return defaultImage;
 
-        const res = await api.get(`/hostel/food_menu/${id}`);
-        console.log("✅ Food Menu API Response:", res.data);
+    // if backend already sends full URL
+    if (imagePath.startsWith("http")) return imagePath;
 
-        if (res.data && Array.isArray(res.data.menu)) {
-          setFoodMenu(res.data.menu);
-        } else if (Array.isArray(res.data)) {
-          setFoodMenu(res.data);
-        } else {
-          setFoodMenu([]);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching food menu:", err);
-        setFoodMenu([]);
-      }
-    };
+    // if backend sends "/uploads/xxx.jpg"
+    if (imagePath.startsWith("/uploads")) {
+      return `${import.meta.env.VITE_API_URL}${imagePath}`;
+    }
 
-    fetchFoodMenu();
-  }, [id]);
-
-  // ================= IMAGE NAVIGATION =================
-  const nextImage = () => {
-    setMainImageIndex((prev) => (prev + 1) % images.length);
+    // if backend sends only filename "abc.jpg"
+    return `${import.meta.env.VITE_API_URL}/uploads/${imagePath}`;
   };
 
-  const prevImage = () => {
-    setMainImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  if (loading) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        <h2>Loading Hostel Details...</h2>
+      </div>
+    );
+  }
 
-  // ================= UI =================
   if (!hostel) {
-    return <div className="loading">Loading Hostel Details...</div>;
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        <h2>Hostel Not Found</h2>
+      </div>
+    );
   }
 
   return (
-    <div className="hostel-details-page">
-
-      {/* ================= BACK BUTTON ================= */}
-      <button className="back-btn" onClick={() => navigate(-1)}>
-        ⬅ Back
-      </button>
-
-      {/* ================= IMAGE SECTION ================= */}
-      <div className="image-slider-container">
-
-        <button className="slider-btn left" onClick={prevImage}>
-          ❮
-        </button>
-
+    <div className="hostel-page-container">
+      {/* ================== HOSTEL IMAGE ================== */}
+      <div className="hostel-banner">
         <img
-          src={images[mainImageIndex]}
-          alt="Room"
-          className="main-hostel-image"
+          src={getImageUrl(hostel.image)}
+          alt="Hostel"
+          className="hostel-banner-img"
           onError={(e) => {
-            e.target.src = pg1;
+            e.target.src = defaultImage;
           }}
         />
-
-        <button className="slider-btn right" onClick={nextImage}>
-          ❯
-        </button>
       </div>
 
-      {/* ================= THUMBNAILS ================= */}
-      <div className="thumbnail-container">
-        {images.map((img, idx) => (
-          <img
-            key={idx}
-            src={img}
-            alt={`Thumb ${idx}`}
-            className={`thumbnail-img ${
-              mainImageIndex === idx ? "active-thumb" : ""
-            }`}
-            onClick={() => setMainImageIndex(idx)}
-            onError={(e) => {
-              e.target.src = pg1;
-            }}
-          />
-        ))}
-      </div>
-
-      {/* ================= HOSTEL INFO ================= */}
-      <div className="hostel-info">
-        <h1 className="hostel-name">{hostel.name}</h1>
+      {/* ================== HOSTEL DETAILS ================== */}
+      <div className="hostel-details-card">
+        <h1 className="hostel-title">{hostel.name}</h1>
 
         <p className="hostel-location">
-          📍 {hostel.city}, {hostel.area}
+          📍 {hostel.location || hostel.address || "Location not available"}
         </p>
-
-        <p className="hostel-owner">👤 Owner: {hostel.ownerName}</p>
-
-        <p className="hostel-price">💰 Price: ₹{hostel.price}</p>
-
-        <p className="hostel-roomtype">🛏 Room Type: {hostel.roomType}</p>
 
         <p className="hostel-description">
-          📝 {hostel.description || "No description available"}
+          {hostel.description || "No description available"}
         </p>
+
+        <div className="hostel-info-grid">
+          <div className="hostel-info-box">
+            <h4>💰 Rent</h4>
+            <p>₹ {hostel.rent || hostel.price || "N/A"}</p>
+          </div>
+
+          <div className="hostel-info-box">
+            <h4>🛏 Rooms</h4>
+            <p>{hostel.rooms || "N/A"}</p>
+          </div>
+
+          <div className="hostel-info-box">
+            <h4>📞 Contact</h4>
+            <p>{hostel.phone || hostel.contact || "N/A"}</p>
+          </div>
+        </div>
       </div>
 
-      {/* ================= FOOD MENU ================= */}
-      <div className="food-menu-section">
-        <h2>🍽 Food Menu</h2>
+      {/* ================== FOOD MENU ================== */}
+      <div className="food-menu-card">
+        <h2 className="food-menu-title">🍽 Food Menu</h2>
 
         {foodMenu.length === 0 ? (
-          <p>No food menu available</p>
+          <p className="no-food-menu">Food menu not available.</p>
         ) : (
-          <ul className="food-menu-list">
-            {foodMenu.map((item, idx) => (
-              <li key={idx} className="food-menu-item">
-                {item}
-              </li>
+          <div className="food-menu-grid">
+            {foodMenu.map((item, index) => (
+              <div key={index} className="food-menu-item">
+                <h4>{item.day || `Day ${index + 1}`}</h4>
+                <p>
+                  <b>Breakfast:</b> {item.breakfast || "N/A"}
+                </p>
+                <p>
+                  <b>Lunch:</b> {item.lunch || "N/A"}
+                </p>
+                <p>
+                  <b>Dinner:</b> {item.dinner || "N/A"}
+                </p>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>
   );
 };
 
-export default HostelDetails;
+export default HostelPage;
