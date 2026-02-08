@@ -1353,12 +1353,8 @@ const Dashboard = ({ user }) => {
   /* ================= STATES ================= */
   const [pgs, setPgs] = useState([]);
   const [loadingPGs, setLoadingPGs] = useState(true);
-
   const [dashboardData, setDashboardData] = useState(null);
   const [recentComplaints, setRecentComplaints] = useState([]);
-
-  const [recentReviews, setRecentReviews] = useState([]);
-  const [loadingReviews, setLoadingReviews] = useState(true);
 
   /* ================= FETCH MY PGs ================= */
   useEffect(() => {
@@ -1367,37 +1363,35 @@ const Dashboard = ({ user }) => {
         const res = await api.get("/hostel/owner/pgs", {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        
         if (res.data.success) {
           const pgData = res.data.data || res.data.hostels || [];
-
-          const processedPGs = pgData.map((pg) => {
+          const processedPGs = pgData.map(pg => {
+            // Handle image URL
             let displayImage = pgDefaultImg;
-
             if (pg.images && pg.images.length > 0) {
               const img = pg.images[0];
-              if (img.startsWith("http")) {
+              if (img.startsWith('http')) {
                 displayImage = img;
-              } else if (img.startsWith("/")) {
+              } else if (img.startsWith('/')) {
                 displayImage = `https://hlopg.com${img}`;
               } else {
                 displayImage = `https://hlopg.com/uploads/${img}`;
               }
             } else if (pg.img) {
-              if (pg.img.startsWith("http")) {
+              if (pg.img.startsWith('http')) {
                 displayImage = pg.img;
               } else {
                 displayImage = `https://hlopg.com${pg.img}`;
               }
             }
-
+            
             return {
               ...pg,
               displayImage: displayImage,
               hostel_name: pg.hostel_name || pg.name,
             };
           });
-
           setPgs(processedPGs);
         }
       } catch (err) {
@@ -1407,7 +1401,9 @@ const Dashboard = ({ user }) => {
       }
     };
 
-    if (token) fetchOwnerPGs();
+    if (token) {
+      fetchOwnerPGs();
+    }
   }, [token]);
 
   /* ================= FETCH DASHBOARD DATA ================= */
@@ -1417,30 +1413,31 @@ const Dashboard = ({ user }) => {
         const res = await api.get("/api/dashboard/owner", {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        
         if (res.data.success) {
           setDashboardData(res.data.dashboard);
         }
       } catch (err) {
         console.warn("Dashboard API error:", err);
-
-        // Sample data fallback
+        // Set sample data for demo
         setDashboardData({
           totalBookings: 23,
           totalRevenue: 125000,
           bookingChart: [
-            { month: "Jan", bookings: 12, revenue: 85000 },
-            { month: "Feb", bookings: 18, revenue: 95000 },
-            { month: "Mar", bookings: 15, revenue: 105000 },
-            { month: "Apr", bookings: 22, revenue: 115000 },
-            { month: "May", bookings: 25, revenue: 125000 },
-            { month: "Jun", bookings: 28, revenue: 135000 },
-          ],
+            { month: 'Jan', bookings: 12, revenue: 85000 },
+            { month: 'Feb', bookings: 18, revenue: 95000 },
+            { month: 'Mar', bookings: 15, revenue: 105000 },
+            { month: 'Apr', bookings: 22, revenue: 115000 },
+            { month: 'May', bookings: 25, revenue: 125000 },
+            { month: 'Jun', bookings: 28, revenue: 135000 }
+          ]
         });
       }
     };
 
-    if (token) fetchDashboardData();
+    if (token) {
+      fetchDashboardData();
+    }
   }, [token]);
 
   /* ================= FETCH RECENT COMPLAINTS ================= */
@@ -1450,65 +1447,23 @@ const Dashboard = ({ user }) => {
         const res = await api.get("/complaints/owner", {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        
         if (res.data?.data && Array.isArray(res.data.data)) {
           setRecentComplaints(res.data.data.slice(0, 3));
         }
       } catch (err) {
-        console.warn("Complaints fetch failed", err);
-
-        // Sample fallback
+        console.warn("Complaints fetch failed, using sample data");
         setRecentComplaints([
-          {
-            id: 1,
-            name: "Vikram Singh",
-            message: "Water heater not working in room 201",
-            status: "Pending",
-          },
-          {
-            id: 2,
-            name: "Neha Gupta",
-            message: "WiFi connectivity issues in common area",
-            status: "Resolved",
-          },
-          {
-            id: 3,
-            name: "Rajesh Nair",
-            message: "Cleaning schedule not followed this week",
-            status: "In Progress",
-          },
+          { id: 1, name: "Vikram Singh", message: "Water heater not working in room 201", status: "Pending" },
+          { id: 2, name: "Neha Gupta", message: "WiFi connectivity issues in common area", status: "Resolved" },
+          { id: 3, name: "Rajesh Nair", message: "Cleaning schedule not followed this week", status: "In Progress" }
         ]);
       }
     };
 
-    if (token) fetchRecentComplaints();
-  }, [token]);
-
-  /* ================= FETCH RECENT REVIEWS (DYNAMIC) ================= */
-  useEffect(() => {
-    const fetchRecentReviews = async () => {
-      try {
-        setLoadingReviews(true);
-
-        const res = await api.get("/reviews/owner", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        // Expected response format: { success: true, data: [] }
-        if (res.data?.data && Array.isArray(res.data.data)) {
-          setRecentReviews(res.data.data.slice(0, 6));
-        } else {
-          setRecentReviews([]);
-        }
-      } catch (err) {
-        console.warn("Reviews fetch failed", err);
-        setRecentReviews([]);
-      } finally {
-        setLoadingReviews(false);
-      }
-    };
-
-    if (token) fetchRecentReviews();
+    if (token) {
+      fetchRecentComplaints();
+    }
   }, [token]);
 
   /* ================= RENDER STARS ================= */
@@ -1526,7 +1481,9 @@ const Dashboard = ({ user }) => {
     }
 
     while (stars.length < 5) {
-      stars.push(<FaRegStar key={`empty-${stars.length}`} color="#FFD700" />);
+      stars.push(
+        <FaRegStar key={`empty-${stars.length}`} color="#FFD700" />
+      );
     }
 
     return <div className="stars">{stars}</div>;
@@ -1545,14 +1502,14 @@ const Dashboard = ({ user }) => {
     <div className="dashboard-container">
       {/* Greeting */}
       <h3 className="welcome-text">
-        Hi, <span className="highlight">{user?.name || "Owner"}</span>. Welcome
-        to <span className="highlight">HloPG</span> Admin!
+        Hi, <span className="highlight">{user?.name || "Owner"}</span>. Welcome to{" "}
+        <span className="highlight">HloPG</span> Admin!
       </h3>
 
       {/* ================= MY PGs SECTION ================= */}
       <section className="my-pgs-section">
         <h4 className="section-title">My PG's</h4>
-
+        
         {pgs.length === 0 ? (
           <div className="no-pgs">
             <p>No PGs found. Upload your first PG!</p>
@@ -1571,7 +1528,9 @@ const Dashboard = ({ user }) => {
                     }}
                   />
                 </div>
-                <div className="pg-card-name">{pg.hostel_name}</div>
+                <div className="pg-card-name">
+                  {pg.hostel_name}
+                </div>
               </div>
             ))}
           </div>
@@ -1582,25 +1541,20 @@ const Dashboard = ({ user }) => {
       {dashboardData && dashboardData.bookingChart && (
         <section className="bookings-section">
           <h4 className="section-title">Bookings & Revenue Trend</h4>
-
           <div className="chart-container">
             <div className="chart-header">
               <div className="chart-stats">
                 <div className="chart-stat">
                   <span className="stat-label">Total Bookings</span>
-                  <span className="stat-value">
-                    {dashboardData.totalBookings || 0}
-                  </span>
+                  <span className="stat-value">{dashboardData.totalBookings || 0}</span>
                 </div>
                 <div className="chart-stat">
                   <span className="stat-label">Total Revenue</span>
-                  <span className="stat-value">
-                    ₹{dashboardData.totalRevenue?.toLocaleString() || 0}
-                  </span>
+                  <span className="stat-value">₹{dashboardData.totalRevenue?.toLocaleString() || 0}</span>
                 </div>
               </div>
             </div>
-
+            
             <div className="chart-wrapper">
               <div className="y-axis">
                 <span>Revenue (₹)</span>
@@ -1613,32 +1567,25 @@ const Dashboard = ({ user }) => {
                   <span>0</span>
                 </div>
               </div>
-
+              
               <div className="chart-content">
                 <div className="x-axis">
                   {dashboardData.bookingChart.map((item) => (
-                    <span key={item.month} className="x-label">
-                      {item.month}
-                    </span>
+                    <span key={item.month} className="x-label">{item.month}</span>
                   ))}
                 </div>
-
+                
                 <div className="chart-bars">
-                  {dashboardData.bookingChart.map((item) => (
+                  {dashboardData.bookingChart.map((item, index) => (
                     <div key={item.month} className="chart-bar-container">
-                      <div
-                        className="chart-bar revenue"
-                        style={{
-                          height: `${(item.revenue / 150000) * 100}%`,
-                        }}
+                      <div 
+                        className="chart-bar revenue" 
+                        style={{ height: `${(item.revenue / 150000) * 100}%` }}
                         title={`Revenue: ₹${item.revenue.toLocaleString()}`}
                       ></div>
-
-                      <div
-                        className="chart-bar bookings"
-                        style={{
-                          height: `${(item.bookings / 30) * 100}%`,
-                        }}
+                      <div 
+                        className="chart-bar bookings" 
+                        style={{ height: `${(item.bookings / 30) * 100}%` }}
                         title={`Bookings: ${item.bookings}`}
                       ></div>
                     </div>
@@ -1646,7 +1593,7 @@ const Dashboard = ({ user }) => {
                 </div>
               </div>
             </div>
-
+            
             <div className="chart-legend">
               <div className="legend-item">
                 <div className="legend-color revenue"></div>
@@ -1664,7 +1611,6 @@ const Dashboard = ({ user }) => {
       {/* ================= COMPLAINTS ================= */}
       <section className="complaints-section">
         <h4 className="section-title">Recent Complaints</h4>
-
         {recentComplaints.length === 0 ? (
           <p className="no-data">No complaints</p>
         ) : (
@@ -1674,19 +1620,13 @@ const Dashboard = ({ user }) => {
                 <div className="complaint-icon">
                   <FaUser />
                 </div>
-
                 <div className="complaint-content">
                   <div className="complaint-header">
                     <h5>{complaint.name}</h5>
-                    <span
-                      className={`status-badge ${complaint.status
-                        ?.toLowerCase()
-                        .replace(" ", "-")}`}
-                    >
+                    <span className={`status-badge ${complaint.status?.toLowerCase().replace(' ', '-')}`}>
                       {complaint.status}
                     </span>
                   </div>
-
                   <p className="complaint-message">{complaint.message}</p>
                 </div>
               </div>
@@ -1695,42 +1635,49 @@ const Dashboard = ({ user }) => {
         )}
       </section>
 
-      {/* ================= REVIEWS (DYNAMIC) ================= */}
+      {/* ================= REVIEWS ================= */}
       <section className="reviews-section">
         <h4 className="section-title">Recent Reviews</h4>
-
-        {loadingReviews ? (
-          <p className="no-data">Loading reviews...</p>
-        ) : recentReviews.length === 0 ? (
-          <p className="no-data">No reviews yet</p>
-        ) : (
-          <div className="reviews-cards-grid">
-            {recentReviews.map((review) => (
-              <div className="review-card" key={review.id || review.review_id}>
-                <div className="review-header">
-                  <div className="review-avatar">
-                    <FaUser />
-                  </div>
-
-                  <div className="reviewer-info">
-                    <h5>{review.userName || review.name || "User"}</h5>
-                    {renderStars(review.rating || 0)}
-                  </div>
-                </div>
-
-                <p className="review-text">
-                  {review.comment || review.review || "No review message"}
-                </p>
-
-                {review.hostelName && (
-                  <p style={{ fontSize: "12px", color: "#666" }}>
-                    PG: <b>{review.hostelName}</b>
-                  </p>
-                )}
+        <div className="reviews-cards-grid">
+          <div className="review-card">
+            <div className="review-header">
+              <div className="review-avatar">
+                <FaUser />
               </div>
-            ))}
+              <div className="reviewer-info">
+                <h5>Sneha R.</h5>
+                {renderStars(4.5)}
+              </div>
+            </div>
+            <p className="review-text">Great facilities and clean rooms. Staff is very cooperative.</p>
           </div>
-        )}
+          
+          <div className="review-card">
+            <div className="review-header">
+              <div className="review-avatar">
+                <FaUser />
+              </div>
+              <div className="reviewer-info">
+                <h5>Mohit P.</h5>
+                {renderStars(4)}
+              </div>
+            </div>
+            <p className="review-text">Good food quality and timely service. Happy with the stay.</p>
+          </div>
+          
+          <div className="review-card">
+            <div className="review-header">
+              <div className="review-avatar">
+                <FaUser />
+              </div>
+              <div className="reviewer-info">
+                <h5>Kiran V.</h5>
+                {renderStars(4.2)}
+              </div>
+            </div>
+            <p className="review-text">Comfortable stay at reasonable price. Would recommend to friends.</p>
+          </div>
+        </div>
       </section>
     </div>
   );
