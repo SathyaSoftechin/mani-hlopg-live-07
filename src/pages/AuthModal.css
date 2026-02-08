@@ -1,246 +1,171 @@
+/* ================= OVERLAY ================= */
 .auth-modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 99999;
+  padding: 20px;
+  overflow-y: auto;
 }
 
+/* ================= CARD ================= */
 .auth-card {
-  background: #fff;
-  border-radius: 15px;
-  width: 400px;
+  width: 520px;
   max-width: 95%;
-  padding: 25px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 35px 40px;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  text-align: center;
-  margin-top: 70px;
-  margin-bottom: 40px;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.25);
+
+  /* IMPORTANT FIX */
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
+/* ================= CLOSE BUTTON ================= */
 .auth-close-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 18px;
+  right: 18px;
   border: none;
-  background: none;
-  font-size: 20px;
+  background: transparent;
+  font-size: 22px;
   cursor: pointer;
+}
+
+/* ================= LOGO ================= */
+.auth-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
 }
 
 .auth-logo img {
   width: 60px;
-  margin-bottom: 1px;
+  height: 60px;
 }
 
+/* ================= MESSAGE ================= */
 .auth-message {
-  margin-bottom: 0px;
-  color: #d9534f;
-  font-weight: 500;
-}
-
-.auth-form h2 {
-  margin-bottom: 8px;
-  margin-top: 0px;
-}
-
-.auth-form input[type="text"],
-.auth-form input[type="email"],
-.auth-form input[type="password"] {
-  width: 100%;
-  padding: 12px 10px;
-  margin: 5px 0;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  background: #f3f3f3;
+  color: #000;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
   font-size: 14px;
-  box-sizing: border-box;
+  margin-bottom: 15px;
 }
 
+/* ================= FORM ================= */
+.auth-form h2 {
+  text-align: center;
+  font-size: 30px;
+  margin-bottom: 20px;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  font-size: 16px;
+  outline: none;
+}
+
+/* ================= PASSWORD WRAPPER ================= */
 .auth-password-wrapper {
   position: relative;
   width: 100%;
 }
 
+.auth-password-wrapper input {
+  padding-right: 45px;
+}
+
 .auth-eye {
   position: absolute;
-  right: 12px;
+  right: 15px;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
-  user-select: none;
+  color: #444;
 }
 
-.auth-checkbox {
-  text-align: left;
-  font-size: 13px;
-  margin: 8px 0;
-}
-
+/* ================= BUTTON ================= */
 .auth-btn {
   width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 8px;
-  background: #7b4dff;
+  padding: 14px;
+  background: #6c4cff;
   color: #fff;
-  font-weight: 600;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
   cursor: pointer;
+  margin-top: 10px;
+}
+
+.auth-btn:hover {
+  background: #5b3cff;
 }
 
 .auth-btn:disabled {
-  background: #ccc;
+  background: gray;
   cursor: not-allowed;
 }
 
+/* ================= SWITCH ================= */
 .auth-switch {
-  font-size: 13px;
-  margin-top: 10px;
+  text-align: center;
+  margin-top: 15px;
+  font-size: 15px;
 }
 
 .auth-switch span {
-  color: #7b4dff;
+  color: #6c4cff;
   cursor: pointer;
+  font-weight: bold;
 }
 
-.auth-or {
-  margin: 15px 0;
-  font-size: 13px;
-  color: #888;
-}
-
-.auth-google-btn {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  background: #fff;
-  font-weight: 500;
-}
-
-.auth-google-btn:hover {
-  background: #f5f5f5;
-}
-
-.auth-otp-section input {
-  width: 50px;
-  height: 50px;
+/* ================= OTP ================= */
+.auth-otp-section {
   text-align: center;
-  font-size: 20px;
-  margin: 5px;
-  border-radius: 8px;
+}
+
+.auth-otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.auth-otp-inputs input {
+  width: 55px;
+  height: 55px;
+  text-align: center;
+  font-size: 22px;
+  border-radius: 10px;
   border: 1px solid #ccc;
 }
 
-.auth-otp-section button {
-  margin-top: 15px;
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background: #7b4dff;
-  color: #fff;
-  cursor: pointer;
-}
-
-/* =================== MOBILE / TABLET =================== */
-@media (max-width: 768px) {
+/* ================= MOBILE FIX ================= */
+@media (max-width: 600px) {
   .auth-card {
-    width: 90% !important;
-    padding: 15px !important;
-  }
-
-  .auth-logo img {
-    width: 50px;
-    margin-bottom: 10px;
+    padding: 25px 20px;
   }
 
   .auth-form h2 {
-    font-size: 18px;
-    margin-bottom: 12px;
-  }
-
-  .auth-form input[type="text"],
-  .auth-form input[type="email"],
-  .auth-form input[type="password"] {
-    padding: 10px 8px;
-    font-size: 13px;
+    font-size: 24px;
   }
 
   .auth-btn {
-    padding: 10px;
-    font-size: 14px;
-  }
-
-  .auth-google-btn {
-    padding: 8px;
-    font-size: 14px;
-  }
-
-  .auth-otp-section input {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
-    margin: 4px;
-  }
-
-  .auth-otp-section button {
-    padding: 10px;
-    font-size: 14px;
-  }
-}
-
-/* =================== SMALLER MOBILE / PHONES =================== */
-@media (max-width: 480px) {
-  .auth-card {
-    width: 95%;
-    padding: 15px;
-  }
-
-  .auth-logo img {
-    width: 45px;
-  }
-
-  .auth-form h2 {
     font-size: 16px;
-  }
-
-  .auth-form input[type="text"],
-  .auth-form input[type="email"],
-  .auth-form input[type="password"] {
-    padding: 8px 6px;
-    font-size: 12px;
-  }
-
-  .auth-btn {
-    padding: 8px;
-    font-size: 13px;
-  }
-
-  .auth-google-btn {
-    padding: 6px;
-    font-size: 13px;
-  }
-
-  .auth-otp-section input {
-    width: 35px;
-    height: 35px;
-    font-size: 16px;
-    margin: 3px;
-  }
-
-  .auth-otp-section button {
-    padding: 8px;
-    font-size: 13px;
-  }
-
-  .auth-close-btn {
-    top: 5px;
-    right: 5px;
-    font-size: 18px;
   }
 }
