@@ -2,11 +2,9 @@ import React, { useState } from "react";
 import "./AuthModal.css";
 import api from "../api";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useGoogleLogin } from "@react-oauth/google";
-import axios from "axios";
 
 const AuthModal = ({ isOpen, onClose, onSuccess }) => {
-  const [step, setStep] = useState("signup"); // signup -> otp -> login
+  const [step, setStep] = useState("signup");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -30,66 +28,11 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
 
   if (!isOpen) return null;
 
-  // ================= GOOGLE LOGIN =================
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setLoading(true);
-        setMessage("Fetching Google Account...");
-
-        // Get user details from google
-        const googleUser = await axios.get(
-          "https://www.googleapis.com/oauth2/v3/userinfo",
-          {
-            headers: {
-              Authorization: `Bearer ${tokenResponse.access_token}`,
-            },
-          }
-        );
-
-        console.log("Google User:", googleUser.data);
-
-        const email = googleUser.data.email;
-        const name = googleUser.data.name;
-
-        setMessage("Logging in with Google...");
-
-        // Send to backend (you must create API for this)
-        const res = await api.post("/auth/google-login", {
-          email: email,
-          name: name,
-        });
-
-        if (res.data.success) {
-          localStorage.setItem("hlopgToken", res.data.data.token);
-          localStorage.setItem("hlopgUser", JSON.stringify(res.data.data.user));
-
-          setMessage("✅ Google Login Success!");
-
-          setTimeout(() => {
-            onSuccess();
-            onClose();
-          }, 1000);
-        } else {
-          setMessage(res.data.message || "Google login failed");
-        }
-      } catch (err) {
-        console.error("Google login error:", err);
-        setMessage("Google login failed");
-      } finally {
-        setLoading(false);
-      }
-    },
-
-    onError: () => {
-      setMessage("Google login cancelled");
-    },
-  });
-
-  // ================= SIGNUP SUBMIT =================
+  // SIGNUP
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setMessage("");
 
     try {
       if (formData.password !== formData.confirmPassword) {
@@ -103,9 +46,9 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
       if (res.data.success) {
         setTempPhone(formData.phone);
         setStep("otp");
-        setMessage("✅ OTP sent to your phone!");
+        setMessage("✅ OTP sent successfully!");
       } else {
-        setMessage(res.data.message);
+        setMessage(res.data.message || "Signup failed");
       }
     } catch (err) {
       setMessage(err.response?.data?.message || "Signup Error");
@@ -114,16 +57,17 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // ================= OTP VERIFY =================
+  // OTP VERIFY
   const verifyOTP = async () => {
     const enteredOTP = otp.join("");
 
     if (enteredOTP.length !== 4) {
-      setMessage("Enter 4-digit OTP");
+      setMessage("❌ Enter 4-digit OTP");
       return;
     }
 
     setLoading(true);
+    setMessage("");
 
     try {
       const res = await api.post("/auth/verify-otp", {
@@ -154,10 +98,11 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // ================= LOGIN SUBMIT =================
+  // LOGIN
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setMessage("");
 
     try {
       const res = await api.post("/auth/login/user", loginData);
@@ -173,7 +118,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
           onClose();
         }, 1000);
       } else {
-        setMessage(res.data.message);
+        setMessage(res.data.message || "Login failed");
       }
     } catch (err) {
       setMessage(err.response?.data?.message || "Login failed");
@@ -182,23 +127,20 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // ================= UI =================
   return (
-    <div className="auth-modal-overlay" onClick={onClose}>
+    <div className="auth-modal-overlay">
       <div className="auth-card" onClick={(e) => e.stopPropagation()}>
         <button className="auth-close-btn" onClick={onClose}>
           ✕
         </button>
 
-        {/* Logo */}
         <div className="auth-logo">
           <img src="/logo.png" alt="Logo" />
         </div>
 
-        {/* Message */}
         {message && <div className="auth-message">{message}</div>}
 
-        {/* ================= SIGNUP ================= */}
+        {/* SIGNUP */}
         {step === "signup" && (
           <form className="auth-form" onSubmit={handleSignupSubmit}>
             <h2>Signup</h2>
@@ -286,21 +228,10 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
               Do you have an Account?{" "}
               <span onClick={() => setStep("login")}>Login</span>
             </div>
-
-            <div className="auth-or">Or</div>
-
-            <button
-              type="button"
-              className="auth-google-btn"
-              onClick={() => googleLogin()}
-              disabled={loading}
-            >
-              {loading ? "Please wait..." : "Sign in with Google"}
-            </button>
           </form>
         )}
 
-        {/* ================= OTP ================= */}
+        {/* OTP */}
         {step === "otp" && (
           <div className="auth-otp-section">
             <h2>Verify OTP</h2>
@@ -334,7 +265,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
         )}
 
-        {/* ================= LOGIN ================= */}
+        {/* LOGIN */}
         {step === "login" && (
           <form className="auth-form" onSubmit={handleLoginSubmit}>
             <h2>Login</h2>
@@ -374,17 +305,6 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
             <div className="auth-switch">
               New User <span onClick={() => setStep("signup")}>Signup</span>
             </div>
-
-            <div className="auth-or">Or</div>
-
-            <button
-              type="button"
-              className="auth-google-btn"
-              onClick={() => googleLogin()}
-              disabled={loading}
-            >
-              {loading ? "Please wait..." : "Sign in with Google"}
-            </button>
           </form>
         )}
       </div>
