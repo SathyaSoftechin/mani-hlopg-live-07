@@ -4,7 +4,7 @@ import api from "../api";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const AuthModal = ({ isOpen, onClose, onSuccess }) => {
-  const [step, setStep] = useState("signup");
+  const [step, setStep] = useState("signup"); // signup -> otp -> login
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -28,7 +28,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
 
   if (!isOpen) return null;
 
-  // SIGNUP
+  // ================= SIGNUP =================
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -57,7 +57,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // OTP VERIFY
+  // ================= OTP VERIFY =================
   const verifyOTP = async () => {
     const enteredOTP = otp.join("");
 
@@ -98,7 +98,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // LOGIN
+  // ================= LOGIN =================
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -127,20 +127,23 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
+  // ================= UI =================
   return (
-    <div className="auth-modal-overlay">
+    <div className="auth-modal-overlay" onClick={onClose}>
       <div className="auth-card" onClick={(e) => e.stopPropagation()}>
         <button className="auth-close-btn" onClick={onClose}>
           ✕
         </button>
 
+        {/* Logo */}
         <div className="auth-logo">
           <img src="/logo.png" alt="Logo" />
         </div>
 
+        {/* Message */}
         {message && <div className="auth-message">{message}</div>}
 
-        {/* SIGNUP */}
+        {/* ================= SIGNUP ================= */}
         {step === "signup" && (
           <form className="auth-form" onSubmit={handleSignupSubmit}>
             <h2>Signup</h2>
@@ -231,7 +234,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
           </form>
         )}
 
-        {/* OTP */}
+        {/* ================= OTP ================= */}
         {step === "otp" && (
           <div className="auth-otp-section">
             <h2>Verify OTP</h2>
@@ -262,10 +265,14 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
             <button onClick={verifyOTP} className="auth-btn" disabled={loading}>
               {loading ? "Verifying..." : "Verify"}
             </button>
+
+            <div className="auth-switch">
+              Back to <span onClick={() => setStep("signup")}>Signup</span>
+            </div>
           </div>
         )}
 
-        {/* LOGIN */}
+        {/* ================= LOGIN ================= */}
         {step === "login" && (
           <form className="auth-form" onSubmit={handleLoginSubmit}>
             <h2>Login</h2>
