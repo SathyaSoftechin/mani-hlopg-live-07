@@ -33,9 +33,12 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Owner login state
   const [isOwnerLoggedIn, setIsOwnerLoggedIn] = useState(false);
 
-  // Check login status
+  // --------------------------
+  // CHECK OWNER LOGIN STATUS
+  // --------------------------
   useEffect(() => {
     const checkLoginStatus = () => {
       const token = localStorage.getItem("hlopgToken");
@@ -51,7 +54,7 @@ function App() {
         currentPath: location.pathname,
       });
 
-      // Redirect owner to dashboard if tries to open homepage
+      // If owner logged in and trying to access home page
       if (ownerLoggedIn && location.pathname === "/") {
         console.log("🚀 Owner logged in - redirecting to dashboard");
         navigate("/owner-dashboard", { replace: true });
@@ -68,7 +71,9 @@ function App() {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [location.pathname, navigate]);
 
-  // Intro video skip if owner logged in
+  // --------------------------
+  // INTRO VIDEO (Skip if owner logged in)
+  // --------------------------
   const [showIntro, setShowIntro] = useState(() => {
     const token = localStorage.getItem("hlopgToken");
     const role = localStorage.getItem("hlopgRole");
@@ -87,13 +92,13 @@ function App() {
     }
   }, [showIntro]);
 
-  // Loading video skip if owner logged in
+  // --------------------------
+  // LOADING VIDEO (Skip if owner logged in)
+  // --------------------------
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isOwnerLoggedIn) {
-      return;
-    }
+    if (isOwnerLoggedIn) return;
 
     const path = location.pathname;
 
@@ -116,16 +121,26 @@ function App() {
     }
   }, [location.pathname, showIntro, isOwnerLoggedIn]);
 
-  // Global loader functions
+  // Loader functions for backend calls
   useEffect(() => {
     window.showServerLoader = () => setLoading(true);
     window.hideServerLoader = () => setLoading(false);
   }, []);
 
+  // Hide header/footer in dashboard routes
   const hideHeaderFooter =
     location.pathname.startsWith("/owner-dashboard") ||
     location.pathname.startsWith("/view") ||
     location.pathname === "/owner-profile";
+
+  // If owner is logged in and tries to open home, don't show home UI
+  if (isOwnerLoggedIn && location.pathname === "/") {
+    return (
+      <div className="app-container" style={{ display: "none" }}>
+        {/* Redirecting... */}
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
@@ -144,9 +159,9 @@ function App() {
         {!showIntro && (
           <Routes>
             {/* Home */}
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={!isOwnerLoggedIn ? <Home /> : null} />
 
-            {/* Public Pages */}
+            {/* Common pages */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/hostel/:hostelId" element={<HostelPage />} />
@@ -169,30 +184,25 @@ function App() {
               element={<OwnerForgetPassword />}
             />
 
-            {/* Common Login */}
+            {/* Common login */}
             <Route path="/login" element={<CommonLogin />} />
 
-            {/* User Dashboard */}
+            {/* User dashboard */}
             <Route path="/user-dashboard" element={<UserProfile />} />
 
-            {/* ✅ OWNER DASHBOARD FIXED */}
+            {/* ✅ OWNER DASHBOARD (THIS IS THE MAIN FIX) */}
             <Route
               path="/owner-dashboard"
-              element={isOwnerLoggedIn ? <Dashboard /> : <OwnerLogin />}
+              element={isOwnerLoggedIn ? <AdminPanel /> : <OwnerLogin />}
             />
 
-            {/* Owner Pages */}
+            {/* Other owner routes */}
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/upload-pg" element={<UploadPG />} />
             <Route path="/my-pgs" element={<MyPGs />} />
             <Route path="/edit-pg/:hostel_id" element={<EditPG />} />
             <Route path="/pg-members/:hostel_id" element={<PGMembers />} />
             <Route path="/owner-profile" element={<ProfilePage />} />
-
-            {/* Admin Panel */}
-            <Route path="/admin-panel" element={<AdminPanel />} />
-
-            {/* Backup */}
-            <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
         )}
       </main>
