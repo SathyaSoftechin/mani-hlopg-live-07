@@ -35,16 +35,14 @@ const cityImages = {
   mumbai: mumbaiBg,
 };
 
-// ✅ Correct base URL
+// ✅ Backend Base URL
 const BASE_URL = "https://www.hlopg.com";
 
-// ✅ Fixed image URL helper
+// ✅ Fixed Image URL Builder
 const getFullImageUrl = (imagePath) => {
   if (!imagePath) return "https://via.placeholder.com/300x200?text=Hostel";
 
-  if (imagePath.startsWith("http")) {
-    return imagePath;
-  }
+  if (imagePath.startsWith("http")) return imagePath;
 
   if (imagePath.startsWith("/uploads")) {
     return `${BASE_URL}${imagePath}`;
@@ -66,29 +64,37 @@ const CityHostels = () => {
       try {
         setLoading(true);
 
+        console.log("Fetching hostels for city:", cityName);
+
         const res = await api.get(`/hostel/gethostels?city=${cityName}`);
 
         console.log(`${cityName} hostels response:`, res.data);
 
         if (res.data.success && Array.isArray(res.data.hostels)) {
-          const filteredHostels = res.data.hostels.filter((hostel) => {
-            if (!hostel.city) return false;
+          const mappedHostels = res.data.hostels.map((h) => {
+            // ✅ Parse images properly (MAIN FIX)
+            let imagesArray = [];
 
-            return (
-              hostel.city.toLowerCase().includes(cityName.toLowerCase()) ||
-              cityName.toLowerCase().includes(hostel.city.toLowerCase())
-            );
-          });
+            try {
+              if (typeof h.images === "string") {
+                imagesArray = JSON.parse(h.images);
+              } else if (Array.isArray(h.images)) {
+                imagesArray = h.images;
+              }
+            } catch (err) {
+              console.log("Error parsing images:", err);
+              imagesArray = [];
+            }
 
-          const mappedHostels = filteredHostels.map((h) => {
             let mainImage = "https://via.placeholder.com/300x200?text=Hostel";
 
-            if (h.images && Array.isArray(h.images) && h.images.length > 0) {
-              mainImage = getFullImageUrl(h.images[0]);
+            if (imagesArray.length > 0) {
+              mainImage = getFullImageUrl(imagesArray[0]);
             } else if (h.img) {
               mainImage = getFullImageUrl(h.img);
             }
 
+            // ✅ Parse facilities
             let facilities = {};
             try {
               facilities =
@@ -99,6 +105,7 @@ const CityHostels = () => {
               facilities = {};
             }
 
+            // ✅ Parse sharing
             let sharing = "Not specified";
             try {
               const sharingData =
@@ -136,15 +143,20 @@ const CityHostels = () => {
               console.log("Error parsing sharing:", e);
             }
 
+            // ✅ Gender label
             let genderLabel = "👨🏻‍💼 Men's PG";
             const genderText = (h.pg_type || "").toLowerCase();
 
             if (genderText.includes("women") || genderText.includes("female")) {
               genderLabel = "💁🏻‍♀️ Women's PG";
-            } else if (genderText.includes("co") || genderText.includes("mixed")) {
+            } else if (
+              genderText.includes("co") ||
+              genderText.includes("mixed")
+            ) {
               genderLabel = "👫 Co-Living";
             }
 
+            // ✅ Facilities map
             const facilityMap = {
               wifi: { name: "WiFi", icon: <FaWifi /> },
               parking: { name: "Parking", icon: <FaParking /> },
@@ -183,7 +195,11 @@ const CityHostels = () => {
               name: h.hostel_name || h.name || "Unnamed Hostel",
               area: h.area || "Unknown Area",
               location: h.area || h.city || h.address || "Unknown Location",
-              price: h.price ? `₹${h.price}` : h.rent ? `₹${h.rent}` : "₹5000",
+              price: h.price
+                ? `₹${h.price}`
+                : h.rent
+                ? `₹${h.rent}`
+                : "₹5000",
               rating: h.rating || 4.5,
               facilities: facilitiesList.slice(0, 6),
               sharing: sharing,
@@ -197,7 +213,7 @@ const CityHostels = () => {
           console.log(`Mapped ${mappedHostels.length} hostels for ${cityName}`);
           setHostels(mappedHostels);
         } else {
-          console.log("No hostels found or API response format incorrect");
+          console.log("No hostels found or API response incorrect");
           setHostels([]);
         }
       } catch (err) {
@@ -244,9 +260,7 @@ const CityHostels = () => {
       <div
         className="city-hero"
         style={{
-          backgroundImage: `url(${
-            cityImages[cityName.toLowerCase()] || hyderabadBg
-          })`,
+          backgroundImage: `url(${cityImages[cityName.toLowerCase()] || hyderabadBg})`,
         }}
       >
         <div className="city-overlay">
@@ -344,6 +358,7 @@ const CityHostels = () => {
                     ))}
                   </div>
                 </div>
+
               </div>
             </div>
           ))}
