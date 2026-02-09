@@ -27,6 +27,16 @@ import pg3 from "../assets/pg3.jpg";
 import pg4 from "../assets/pg4.jpg";
 import pg5 from "../assets/pg5.png";
 
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
 /* ⭐ Render Star Ratings */
 const renderStars = (rating = 0) => {
   const stars = [];
@@ -65,6 +75,13 @@ const HostelPage = () => {
 
   const [user, setUser] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
+
+  const normalizedMenu = DAYS_OF_WEEK.map((dayName, index) => ({
+  day: dayName,
+  breakfast: foodMenu[index]?.breakfast || "-",
+  lunch: foodMenu[index]?.lunch || "-",
+  dinner: foodMenu[index]?.dinner || "-",
+}));
 
   const dummyReviews = [
     {
@@ -609,14 +626,14 @@ const HostelPage = () => {
               </tr>
             </thead>
             <tbody>
-              {foodMenu.map((day, idx) => (
+              {normalizedMenu.map((day, idx) => (
                 <tr key={idx}>
-                  <td>{day.day || "N/A"}</td>
-                  <td>{day.breakfast || "-"}</td>
-                  <td>{day.lunch || "-"}</td>
-                  <td>{day.dinner || "-"}</td>
-                </tr>
-              ))}
+               <td>{day.day}</td>
+            <td>{day.breakfast}</td>
+            <td>{day.lunch}</td>
+            <td>{day.dinner}</td>
+             </tr>
+                 ))}
             </tbody>
           </table>
         ) : (
