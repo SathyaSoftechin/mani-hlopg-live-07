@@ -1,5 +1,4 @@
-// src/pages/UploadPG.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./UploadPG.css";
 import api from "../api";
 import RoomSetupPopup from "../components/RoomSetupPopup";
@@ -8,322 +7,62 @@ import {
   FaWifi,
   FaFan,
   FaBed,
-  FaLightbulb,
-  FaThermometerHalf,
-  FaShower,
-  FaChair,
-  FaTv,
   FaUtensils,
-  FaDumbbell,
-  FaCar,
-  FaSnowflake,
-  FaPlus,
-  FaSmokingBan,
-  FaWineBottle,
-  FaPaw,
   FaBroom,
+  FaShower,
+  FaPlusCircle,
+  FaTrash,
+  FaUpload,
 } from "react-icons/fa";
 
-const UploadPG = ({ user }) => {
-  // basic PG fields
-  const [pgImages, setPgImages] = useState([]); // preview URLs
-  const [pgImageFiles, setPgImageFiles] = useState([]); // actual File objects
-  const [selectedPgType, setSelectedPgType] = useState("");
-  const [pgName, setPgName] = useState("");
-  const [pgInfo, setPgInfo] = useState("");
-  const [owner, setOwner] = useState(null);
-  const ownerId = user?.owner_id;
+const UploadPG = () => {
+  const ownerId = localStorage.getItem("ownerId"); // Make sure ownerId exists
+  const ownerName = localStorage.getItem("ownerName") || "Owner";
 
-  // location data
-  const locationData = {
-      "Andhra Pradesh": {
-    "Vizag": ["Gajuwaka", "MVP Colony", "Dwarakanagar", "Siripuram"],
-    "Vijayawada": ["Benz Circle", "Poranki", "Gunadala", "Patamata"],
-    "Guntur": ["Arundelpet", "Lakshmipuram", "Brodipet"]
-  },
-  "Telangana": {
-    "Hyderabad": ["Ameerpet", "Gachibowli", "Madhapur", "KPHB", "Hitech City", "Banjara Hills"],
-    "Warangal": ["Hanamkonda", "Kazipet", "Subedari"],
-    "Karimnagar": ["Kaman", "Vavilala Street"]
-  },
-  "Karnataka": {
-    "Bangalore": ["Koramangala", "HSR Layout", "Indiranagar", "Whitefield", "Marathahalli"],
-    "Mysore": ["Vijayanagar", "Gokulam", "Kuvempunagar"],
-    "Mangalore": ["Kadri", "Bejai", "Urwa"]
-  },
-  "Maharashtra": {
-    "Mumbai": ["Andheri", "Bandra", "Powai", "Thane", "Dadar"],
-    "Pune": ["Hinjewadi", "Kharadi", "Viman Nagar", "Koregaon Park", "Baner"],
-    "Nagpur": ["Sadar", "Dharampeth", "Manewada"]
-  },
-  "Tamil Nadu": {
-    "Chennai": ["Adyar", "Anna Nagar", "T Nagar", "Velachery", "OMR"],
-    "Coimbatore": ["RS Puram", "Saibaba Colony", "Gandhipuram"],
-    "Madurai": ["KK Nagar", "Villapuram", "Simmakkal"]
-  },
-  "Delhi": {
-    "New Delhi": ["Connaught Place", "Karol Bagh", "Chanakyapuri"],
-    "South Delhi": ["Saket", "Hauz Khas", "Greater Kailash"],
-    "West Delhi": ["Rajouri Garden", "Janakpuri", "Dwarka"]
-  },
-  "Uttar Pradesh": {
-    "Lucknow": ["Gomti Nagar", "Hazratganj", "Indira Nagar"],
-    "Noida": ["Sector 62", "Sector 128", "Sector 18"],
-    "Ghaziabad": ["Vaishali", "Kaushambi", "Indirapuram"]
-  },
-  "Gujarat": {
-    "Ahmedabad": ["SG Highway", "Prahlad Nagar", "Maninagar"],
-    "Surat": ["Athwa Lines", "Varachha", "Adajan"],
-    "Vadodara": ["Alkapuri", "Fatehganj", "Gotri"]
-  },
-  "Arunachal Pradesh": {
-    "Itanagar": ["Naharlagun", "Ganga Market"],
-    "Tawang": ["Old Market", "Army Area"]
-  },
+  const [showRoomPopup, setShowRoomPopup] = useState(false);
 
-  "Assam": {
-    "Guwahati": ["Dispur", "Paltan Bazar"],
-    "Silchar": ["Malugram", "Tarapur"]
-  },
+  // Basic fields
+  const [hostelName, setHostelName] = useState("");
+  const [description, setDescription] = useState("");
+  const [pgType, setPgType] = useState("Men");
+  const [address, setAddress] = useState("");
+  const [area, setArea] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
 
-  "Bihar": {
-    "Patna": ["Boring Road", "Kankarbagh"],
-    "Gaya": ["Civil Lines", "Tekari Road"]
-  },
+  // Rooms and rent
+  const [rent, setRent] = useState("");
+  const [price, setPrice] = useState(""); // optional if backend uses it
+  const [advanceAmount, setAdvanceAmount] = useState("");
 
-  "Chhattisgarh": {
-    "Raipur": ["Pandri", "Telibandha"],
-    "Bilaspur": ["Vyapar Vihar", "Sarkanda"]
-  },
+  // Rooms details
+  const [totalRooms, setTotalRooms] = useState(20);
+  const [occupiedRooms, setOccupiedRooms] = useState(0);
+  const [vacantRooms, setVacantRooms] = useState(20);
 
-  "Goa": {
-    "Panaji": ["Miramar", "Altinho"],
-    "Margao": ["Fatorda", "Borda"]
-  },
-
- "Haryana": {
-    "Gurgaon": ["DLF Phase 1", "Sohna Road"],
-    "Faridabad": ["Sector 15", "Ballabhgarh"]
-  },
-
-  "Himachal Pradesh": {
-    "Shimla": ["Mall Road", "Kufri"],
-    "Mandi": ["Seri Bazar", "Nerchowk"]
-  },
-
-  "Jharkhand": {
-    "Ranchi": ["Lalpur", "Doranda"],
-    "Jamshedpur": ["Bistupur", "Sakchi"]
-  },
-
- 
-  "Kerala": {
-    "Kochi": ["Kakkanad", "Edappally"],
-    "Trivandrum": ["Kowdiar", "Pattom"]
-  },
-
-  "Madhya Pradesh": {
-    "Bhopal": ["MP Nagar", "Arera Colony"],
-    "Indore": ["Vijay Nagar", "Palasia"]
-  },
-"Manipur": {
-    "Imphal": ["Thangal Bazar", "Lamphel"],
-    "Bishnupur": ["Moirang", "Nambol"]
-  },
-
-  "Meghalaya": {
-    "Shillong": ["Police Bazar", "Laitumkhrah"],
-    "Tura": ["Rongkhon", "Araimile"]
-  },
-
-  "Mizoram": {
-    "Aizawl": ["Zarkawt", "Chanmari"],
-    "Lunglei": ["Bazar Area", "Venglai"]
-  },
-
-  "Nagaland": {
-    "Kohima": ["Main Town", "High School Area"],
-    "Dimapur": ["City Tower", "Chumukedima"]
-  },
-
-  "Odisha": {
-    "Bhubaneswar": ["Patia", "Jaydev Vihar"],
-    "Cuttack": ["Badambadi", "College Square"]
-  },
-
-  "Punjab": {
-    "Ludhiana": ["Civil Lines", "Model Town"],
-    "Amritsar": ["Ranjit Avenue", "Golden Temple Area"]
-  },
-
-  "Rajasthan": {
-    "Jaipur": ["Malviya Nagar", "Vaishali Nagar"],
-    "Udaipur": ["Hiran Magri", "Fatehpura"]
-  },
-
-  "Sikkim": {
-    "Gangtok": ["MG Marg", "Deorali"],
-    "Namchi": ["Upper Bazar", "Singithang"]
-  },
-  "Tripura": {
-    "Agartala": ["Banamalipur", "Jogendranagar"],
-    "Udaipur": ["Radhakishorepur", "Matabari"]
-  },
-  "Uttarakhand": {
-    "Dehradun": ["Rajpur Road", "ISBT"],
-    "Haridwar": ["Jwalapur", "Kankhal"]
-  },
-
-  "West Bengal": {
-    "Kolkata": ["Salt Lake", "Ballygunge"],
-    "Siliguri": ["Sevoke Road", "Pradhan Nagar"]
-  }
-
-};
-
-//   Telangana: {
-//     Hyderabad: [
-//       "Ameerpet",
-//       "Dilshuknagar",
-//       "Gachibowli",
-//       "Gandimaisamma",
-//       "Kondapur",
-//       "KPHB",
-//       "LB Nagar",
-//       "Medchal",
-//       "Moosapet",
-//       "Madhapur",
-//       "Patancheruvu",
-//       "Uppal"
-//     ],
-//     Warangal: ["Hanamkonda", "Kazipet"]
-//   },
-
-//   Karnataka: {
-//     Bangalore: [
-//       "Bannerghatta",
-//       "Basavanagudi",
-//       "Devanahalli",
-//       "Electronic City",
-//       "Hebbal",
-//       "Hoskote",
-//       "HSR Layout",
-//       "Indiranagar",
-//       "Jayanagar",
-//       "Kengeri",
-//       "Koramangala",
-//       "Madiwala",
-//       "Marathahalli",
-//       "Sarjapur Road",
-//       "Ulsoor",
-//       "Whitefield"
-//     ],
-//     Mysore: ["Gokulam", "Vijayanagar"]
-//   },
-
-//   AndhraPradesh: {
-//     Vijayawada: ["Benz Circle", "Gunadala", "Poranki"],
-//     Vizag: ["Gajuwaka", "MVP Colony"]
-//   },
-
-//   Maharashtra: {
-//     Mumbai: [
-//       "Airoli",
-//       "Andheri",
-//       "Borivali",
-//       "Chembur",
-//       "Goregaon",
-//       "Jogeshwari",
-//       "Juhu",
-//       "Kandivali",
-//       "Kurla",
-//       "Malabar Hill",
-//       "Marine Drive",
-//       "Mira Road",
-//       "Powai",
-//       "Thane",
-//       "Vikhroli",
-//       "Virar"
-//     ],
-//     Pune: [
-//       "Aundh",
-//       "Baner",
-//       "Hadapsar",
-//       "Hinjewadi",
-//       "Kalyani Nagar",
-//       "Kharadi",
-//       "Koregaon Park",
-//       "Kothrud"
-//     ]
-//   },
-
-//   TamilNadu: {
-//     Chennai: [
-//       "Ambattur",
-//       "Anna Nagar",
-//       "Gopalapuram",
-//       "Kotturpuram",
-//       "Medavakkam",
-//       "Navalur",
-//       "Perungudi",
-//       "Porur",
-//       "Semmancheri",
-//       "Tambaram",
-//       "Thoraipakkam",
-//       "Velachery"
-//     ]
-//   }
-// };
-
-  // room-setup popup states
-  const [showRoomSetup, setShowRoomSetup] = useState(false);
-  const [createdPgId, setCreatedPgId] = useState(null);
-
-  // sharing options (type & price)
-  const [sharingOptions, setSharingOptions] = useState([{ type: "", price: "" }]);
-
-  const [numFloors, setNumFloors] = useState("");
-const [roomsPerFloor, setRoomsPerFloor] = useState("");
-const [startingRoomNumber, setStartingRoomNumber] = useState("");
-const [advanceAmount, setAdvanceAmount] = useState("");
-
-  // amenity keys mapping (backend friendly keys)
-  const amenityKeys = {
-    "Free WiFi": "wifi",
-    Fan: "fan",
-    Bed: "bed",
-    Lights: "lights",
-    Cupboard: "cupboard",
-    Geyser: "geyser",
-    Water: "water",
-    Gym: "gym",
-    TV: "tv",
-    Food: "food",
-    Parking: "parking",
-    AC: "ac",
-  };
-
-  const [pgLocation, setPgLocation] = useState({
-    address: "",
-    area: "",
-    city: "",
-    state: "",
-    pincode: "",
+  // Facilities
+  const [facilities, setFacilities] = useState({
+    wifi: false,
+    fan: false,
+    bed: false,
+    food: false,
+    cleaning: false,
+    bathroom: false,
   });
 
-  // rules and selected rules
-  const [rules, setRules] = useState([
-    { name: "No Alcohol", icon: <FaWineBottle /> },
-    { name: "No Smoking", icon: <FaSmokingBan /> },
-    { name: "No Pets", icon: <FaPaw /> },
-    { name: "Keep Clean", icon: <FaBroom /> },
-  ]);
-  const [selectedRules, setSelectedRules] = useState([]);
+  // Rules
+  const [rules, setRules] = useState(["No Alcohol"]);
 
-  // selected furnish/amenities
-  const [selectedFurnish, setSelectedFurnish] = useState([]);
+  // Sharing type data
+  const [sharingData, setSharingData] = useState({
+    single: "",
+    double: "",
+    triple: "",
+    four: "",
+  });
 
-  // food menu
+  // Food Menu
   const [foodMenu, setFoodMenu] = useState({
     monday: { breakfast: "", lunch: "", dinner: "" },
     tuesday: { breakfast: "", lunch: "", dinner: "" },
@@ -333,444 +72,440 @@ const [advanceAmount, setAdvanceAmount] = useState("");
     saturday: { breakfast: "", lunch: "", dinner: "" },
     sunday: { breakfast: "", lunch: "", dinner: "" },
   });
-  const days = Object.keys(foodMenu);
 
-  // UI state
-  const [loading, setLoading] = useState(false);
+  // Images
+  const [pgImageFiles, setPgImageFiles] = useState([]);
+  const [previewImages, setPreviewImages] = useState([]);
 
-  // fetch owner id on mount
-  useEffect(() => {
-    const fetchOwner = async () => {
-      try {
-        const token = localStorage.getItem("hlopgToken");
-        if (!token) return;
-        const res = await api.get("/auth/ownerid", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setOwner(res.data.owner_id);
-        console.log("Owner:", res.data.owner_id);
-      } catch (err) {
-        console.error("Owner fetch failed", err);
-      }
-    };
-    fetchOwner();
-  }, []);
-
-  // image preview + store files
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files || []);
-    const imageUrls = files.map((file) => URL.createObjectURL(file));
-    setPgImages((prev) => [...prev, ...imageUrls]);
-    setPgImageFiles((prev) => [...prev, ...files]);
+  // Handle facility toggle
+  const handleFacilityChange = (key) => {
+    setFacilities((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
 
-  const toggleFurnish = (name) => {
-    setSelectedFurnish((prev) => (prev.includes(name) ? prev.filter((p) => p !== name) : [...prev, name]));
+  // Handle rules add/remove
+  const addRule = () => {
+    setRules((prev) => [...prev, ""]);
   };
 
-  const toggleRule = (ruleName) => {
-    setSelectedRules((prev) => (prev.includes(ruleName) ? prev.filter((r) => r !== ruleName) : [...prev, ruleName]));
+  const removeRule = (index) => {
+    const updated = rules.filter((_, i) => i !== index);
+    setRules(updated);
   };
 
-  const handleFoodChange = (day, meal, value) => {
-    setFoodMenu((prev) => ({ ...prev, [day]: { ...prev[day], [meal]: value } }));
+  const updateRule = (index, value) => {
+    const updated = [...rules];
+    updated[index] = value;
+    setRules(updated);
   };
 
-  const handlePgTypeSelect = (type) => {
-    setSelectedPgType(type);
+  // Handle image upload
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+
+    setPgImageFiles(files);
+
+    const previews = files.map((file) => URL.createObjectURL(file));
+    setPreviewImages(previews);
   };
 
-  const handleLocationChange = (field, value) => {
-    setPgLocation((prev) => ({ ...prev, [field]: value }));
+  // Handle sharing price update
+  const handleSharingChange = (key, value) => {
+    setSharingData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
-  // save generated rooms to backend (called by RoomSetupPopup onGenerate)
-  const saveGeneratedRooms = async (floorsData) => {
-  try {
-    const token = localStorage.getItem("hlopgToken");
-
-    const res = await api.post(
-      "/rooms/bulkCreate",
-      {
-        hostel_id: createdPgId,
-        floors: floorsData,
+  // Handle food menu update
+  const handleFoodMenuChange = (day, meal, value) => {
+    setFoodMenu((prev) => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [meal]: value,
       },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    alert("Rooms saved successfully!");
-  } catch (err) {
-    console.error("Room save failed:", err);
-    alert("Room saving error");
-  }
-};
-
-  // generate sharing object from sharingOptions
-  const buildSharingObject = () => {
-    const sharingObject = {};
-    sharingOptions.forEach((opt) => {
-      if (opt.type && opt.price) sharingObject[opt.type] = Number(opt.price);
-    });
-    return sharingObject;
+    }));
   };
 
-  // ================== handleSubmit ==================
+  // Submit Hostel
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!pgName || !pgInfo || !selectedPgType ) {
-      alert("Please fill all required fields before saving.");
+
+    if (!ownerId) {
+      alert("Owner ID missing! Please login again.");
       return;
     }
 
-    setLoading(true);
+    if (!hostelName || !address || !city || !state || !rent) {
+      alert("Please fill required fields!");
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("hlopgToken");
       const formData = new FormData();
 
-      formData.append("pgName", pgName);
-      formData.append("pgInfo", pgInfo);
-      formData.append("pgType", selectedPgType);
+      // Basic fields
+      formData.append("hostelName", hostelName);
+      formData.append("description", description);
+      formData.append("pgType", pgType);
 
-      formData.append("address", pgLocation.address || "");
-      formData.append("area", pgLocation.area || "");
-      formData.append("city", pgLocation.city || "");
-      formData.append("state", pgLocation.state || "");
-      formData.append("pincode", pgLocation.pincode || "");
+      formData.append("address", address);
+      formData.append("area", area);
+      formData.append("city", city);
+      formData.append("state", state);
+      formData.append("pincode", pincode);
 
-      formData.append("sharing", JSON.stringify(buildSharingObject()));
+      // Rent details
+      formData.append("rent", rent);
+      formData.append("price", price || rent);
+      formData.append("advanceAmount", advanceAmount || "0");
 
-      // owner (use fetched owner or ownerId from props)
- 
-      formData.append("rules", JSON.stringify(selectedRules));
+      // Owner details
+      formData.append("ownerId", ownerId);
+      formData.append("ownerName", ownerName);
 
-      const amenityObject = {};
-      selectedFurnish.forEach((item) => {
-        const key = amenityKeys[item];
-        if (key) amenityObject[key] = true;
-      });
-      formData.append("furnish", JSON.stringify(amenityObject));
+      // Rooms
+      formData.append("totalRooms", totalRooms);
+      formData.append("occupiedRooms", occupiedRooms);
+      formData.append("vacantRooms", vacantRooms);
 
+      // JSON data
+      formData.append("facilities", JSON.stringify(facilities));
+      formData.append("sharingData", JSON.stringify(sharingData));
       formData.append("foodMenu", JSON.stringify(foodMenu));
+      formData.append("rules", JSON.stringify(rules));
 
-      // add image files if any
+      // Images upload (IMPORTANT)
       pgImageFiles.forEach((file) => {
-        formData.append("images", file); // backend should accept images as 'images' multiple
+        formData.append("images", file); // backend should accept MultipartFile[] images
       });
 
-      // Post to your original endpoint
+      // Debug check
+      console.log("📌 FormData values:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      // API call
       const res = await api.post("/hostel/addhostel", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
 
-      alert("PG Uploaded Successfully!");
+      console.log("✅ Hostel uploaded:", res.data);
+      alert("Hostel Uploaded Successfully!");
 
-const newPgId = res.data?.hostel?.hostel_id;
-      console.log("New PG ID:", newPgId);
-      if (!newPgId) {
-  alert("PG saved, but ID missing in response.");
-  return;
-}
-      setCreatedPgId(newPgId);
-      setShowRoomSetup(true);
+      // Reset all fields
+      setHostelName("");
+      setDescription("");
+      setPgType("Men");
+      setAddress("");
+      setArea("");
+      setCity("");
+      setState("");
+      setPincode("");
+      setRent("");
+      setPrice("");
+      setAdvanceAmount("");
+      setTotalRooms(20);
+      setOccupiedRooms(0);
+      setVacantRooms(20);
 
-      console.log("PG Saved:", res.data);
-
-      // reset form values
-      setPgName("");
-      setPgInfo("");
-      setSelectedPgType("");
-      setSelectedRules([]);
-      setSelectedFurnish([]);
-      setPgImages([]);
-      setPgImageFiles([]);
-      setPgLocation({
-        address: "",
-        area: "",
-        city: "",
-        state: "",
-        pincode: "",
+      setFacilities({
+        wifi: false,
+        fan: false,
+        bed: false,
+        food: false,
+        cleaning: false,
+        bathroom: false,
       });
-      setSharingOptions([{ type: "", price: "" }]);
-    } catch (err) {
-      console.error("PG upload error:", err);
-      alert("Failed to upload PG");
-    } finally {
-      setLoading(false);
+
+      setRules(["No Alcohol"]);
+
+      setSharingData({
+        single: "",
+        double: "",
+        triple: "",
+        four: "",
+      });
+
+      setFoodMenu({
+        monday: { breakfast: "", lunch: "", dinner: "" },
+        tuesday: { breakfast: "", lunch: "", dinner: "" },
+        wednesday: { breakfast: "", lunch: "", dinner: "" },
+        thursday: { breakfast: "", lunch: "", dinner: "" },
+        friday: { breakfast: "", lunch: "", dinner: "" },
+        saturday: { breakfast: "", lunch: "", dinner: "" },
+        sunday: { breakfast: "", lunch: "", dinner: "" },
+      });
+
+      setPgImageFiles([]);
+      setPreviewImages([]);
+    } catch (error) {
+      console.error("❌ Upload error:", error);
+      alert("Upload Failed! Check console.");
     }
   };
 
-  // small helpers for sharing options UI
-  const addSharingRow = () => setSharingOptions((prev) => [...prev, { type: "", price: "" }]);
-  const removeSharingRow = (index) => setSharingOptions((prev) => prev.filter((_, i) => i !== index));
-
   return (
     <div className="uploadpg-container">
-      <h3 className="page-title">Upload PG</h3>
+      <h2 className="uploadpg-title">Upload PG / Hostel</h2>
 
-      <form className="pg-form" onSubmit={handleSubmit}>
-        <label>PG Name</label>
-        <input type="text" placeholder="Enter PG Name" value={pgName} onChange={(e) => setPgName(e.target.value)} />
+      <form className="uploadpg-form" onSubmit={handleSubmit}>
+        {/* Hostel Name */}
+        <label>Hostel Name *</label>
+        <input
+          type="text"
+          value={hostelName}
+          onChange={(e) => setHostelName(e.target.value)}
+          placeholder="Enter hostel name"
+          required
+        />
 
-        <label>PG Information</label>
-        <input type="text" placeholder="Enter PG Information" value={pgInfo} onChange={(e) => setPgInfo(e.target.value)} />
+        {/* Description */}
+        <label>Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Enter description"
+        />
 
+        {/* PG Type */}
         <label>PG Type</label>
-        <div className="pg-type">
-          {["Men", "Women", "Co-Living"].map((type) => (
-            <button type="button" key={type} className={`pg-type-btn ${selectedPgType === type ? "selected" : ""}`} onClick={() => handlePgTypeSelect(type)}>
-              {type}
-            </button>
+        <select value={pgType} onChange={(e) => setPgType(e.target.value)}>
+          <option value="Men">Men</option>
+          <option value="Women">Women</option>
+          <option value="Both">Both</option>
+        </select>
+
+        {/* Address */}
+        <label>Address *</label>
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Enter address"
+          required
+        />
+
+        <label>Area</label>
+        <input
+          type="text"
+          value={area}
+          onChange={(e) => setArea(e.target.value)}
+          placeholder="Enter area"
+        />
+
+        <label>City *</label>
+        <input
+          type="text"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Enter city"
+          required
+        />
+
+        <label>State *</label>
+        <input
+          type="text"
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+          placeholder="Enter state"
+          required
+        />
+
+        <label>Pincode</label>
+        <input
+          type="text"
+          value={pincode}
+          onChange={(e) => setPincode(e.target.value)}
+          placeholder="Enter pincode"
+        />
+
+        {/* Rent */}
+        <label>Rent *</label>
+        <input
+          type="number"
+          value={rent}
+          onChange={(e) => setRent(e.target.value)}
+          placeholder="Enter rent amount"
+          required
+        />
+
+        <label>Advance Amount</label>
+        <input
+          type="number"
+          value={advanceAmount}
+          onChange={(e) => setAdvanceAmount(e.target.value)}
+          placeholder="Enter advance amount"
+        />
+
+        {/* Rooms */}
+        <label>Total Rooms</label>
+        <input
+          type="number"
+          value={totalRooms}
+          onChange={(e) => setTotalRooms(e.target.value)}
+        />
+
+        <label>Occupied Rooms</label>
+        <input
+          type="number"
+          value={occupiedRooms}
+          onChange={(e) => setOccupiedRooms(e.target.value)}
+        />
+
+        <label>Vacant Rooms</label>
+        <input
+          type="number"
+          value={vacantRooms}
+          onChange={(e) => setVacantRooms(e.target.value)}
+        />
+
+        {/* Facilities */}
+        <h3>Facilities</h3>
+        <div className="facilities-box">
+          <button type="button" onClick={() => handleFacilityChange("wifi")}>
+            <FaWifi /> Wifi {facilities.wifi ? "✅" : "❌"}
+          </button>
+
+          <button type="button" onClick={() => handleFacilityChange("fan")}>
+            <FaFan /> Fan {facilities.fan ? "✅" : "❌"}
+          </button>
+
+          <button type="button" onClick={() => handleFacilityChange("bed")}>
+            <FaBed /> Bed {facilities.bed ? "✅" : "❌"}
+          </button>
+
+          <button type="button" onClick={() => handleFacilityChange("food")}>
+            <FaUtensils /> Food {facilities.food ? "✅" : "❌"}
+          </button>
+
+          <button type="button" onClick={() => handleFacilityChange("cleaning")}>
+            <FaBroom /> Cleaning {facilities.cleaning ? "✅" : "❌"}
+          </button>
+
+          <button type="button" onClick={() => handleFacilityChange("bathroom")}>
+            <FaShower /> Bathroom {facilities.bathroom ? "✅" : "❌"}
+          </button>
+        </div>
+
+        {/* Sharing */}
+        <h3>Sharing Prices</h3>
+        <div className="sharing-box">
+          <label>Single</label>
+          <input
+            type="number"
+            value={sharingData.single}
+            onChange={(e) => handleSharingChange("single", e.target.value)}
+          />
+
+          <label>Double</label>
+          <input
+            type="number"
+            value={sharingData.double}
+            onChange={(e) => handleSharingChange("double", e.target.value)}
+          />
+
+          <label>Triple</label>
+          <input
+            type="number"
+            value={sharingData.triple}
+            onChange={(e) => handleSharingChange("triple", e.target.value)}
+          />
+
+          <label>Four Sharing</label>
+          <input
+            type="number"
+            value={sharingData.four}
+            onChange={(e) => handleSharingChange("four", e.target.value)}
+          />
+        </div>
+
+        {/* Rules */}
+        <h3>Rules</h3>
+        <div className="rules-box">
+          {rules.map((rule, index) => (
+            <div key={index} className="rule-row">
+              <input
+                type="text"
+                value={rule}
+                onChange={(e) => updateRule(index, e.target.value)}
+                placeholder="Enter rule"
+              />
+              <button type="button" onClick={() => removeRule(index)}>
+                <FaTrash />
+              </button>
+            </div>
           ))}
+
+          <button type="button" onClick={addRule} className="add-rule-btn">
+            <FaPlusCircle /> Add Rule
+          </button>
         </div>
 
-        <label>PG Location</label>
-        <div className="pg-location">
-          {/* STATE */}
-          <select
-            value={pgLocation.state}
-            onChange={(e) =>
-              setPgLocation((prev) => ({
-                ...prev,
-                state: e.target.value,
-                city: "",
-                area: "",
-              }))
-            }
-          >
-            <option value="">Select State</option>
-            {Object.keys(locationData).map((state) => (
-              <option key={state} value={state}>
-                {state}
-              </option>
-            ))}
-          </select>
-
-          {/* CITY */}
-          <select
-            value={pgLocation.city}
-            onChange={(e) =>
-              setPgLocation((prev) => ({
-                ...prev,
-                city: e.target.value,
-                area: "",
-              }))
-            }
-            disabled={!pgLocation.state}
-          >
-            <option value="">Select City</option>
-            {pgLocation.state &&
-              Object.keys(locationData[pgLocation.state]).map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-          </select>
-
-          {/* AREA */}
-          <select value={pgLocation.area} onChange={(e) => setPgLocation((prev) => ({ ...prev, area: e.target.value }))} disabled={!pgLocation.city}>
-            <option value="">Select Area</option>
-            {pgLocation.city && locationData[pgLocation.state][pgLocation.city].map((area) => <option key={area} value={area}>{area}</option>)}
-          </select>
-
-          <input type="text" placeholder="Address" value={pgLocation.address} onChange={(e) => handleLocationChange("address", e.target.value)} />
-          <input type="text" placeholder="Pincode" value={pgLocation.pincode} onChange={(e) => handleLocationChange("pincode", e.target.value)} />
-        </div>
-
-         <label>PG Images</label>
-        <div className="pg-images">
-          {pgImages.map((img, i) => (
-            <img key={i} src={img} alt={`PG ${i}`} />
-          ))}
-
-          <label className="upload-btn">
-            +
-            <input type="file" accept="image/*" multiple onChange={handleImageUpload} />
-          </label>
-        </div>
-
-        {/* PG Sharing Options */}
-        <h3 className="black-text">PG Sharing Type & Price</h3>
-        {sharingOptions.map((item, index) => (
-          <div key={index} className="sharing-row">
-            <select
-              value={item.type}
-              onChange={(e) => {
-                const updated = [...sharingOptions];
-                updated[index].type = e.target.value;
-                setSharingOptions(updated);
-              }}
-              className="sharing-dropdown"
-            >
-              <option value="">Select Sharing</option>
-              <option value="single">1 Sharing (Single)</option>
-              <option value="double">2 Sharing (Double)</option>
-              <option value="triple">3 Sharing (Triple)</option>
-              <option value="four">4 Sharing</option>
-              <option value="five">5 Sharing</option>
-              <option value="six">6 Sharing</option>
-            </select>
+        {/* Food Menu */}
+        <h3>Food Menu</h3>
+        {Object.keys(foodMenu).map((day) => (
+          <div key={day} className="food-day-box">
+            <h4>{day.toUpperCase()}</h4>
 
             <input
-              type="number"
-              placeholder="Price per month"
-              value={item.price}
-              onChange={(e) => {
-                const updated = [...sharingOptions];
-                updated[index].price = e.target.value;
-                setSharingOptions(updated);
-              }}
-              className="price-input"
+              type="text"
+              placeholder="Breakfast"
+              value={foodMenu[day].breakfast}
+              onChange={(e) =>
+                handleFoodMenuChange(day, "breakfast", e.target.value)
+              }
             />
 
-            {index > 0 && (
-              <button type="button" onClick={() => removeSharingRow(index)} className="remove-sharing">
-                ❌
-              </button>
-            )}
+            <input
+              type="text"
+              placeholder="Lunch"
+              value={foodMenu[day].lunch}
+              onChange={(e) =>
+                handleFoodMenuChange(day, "lunch", e.target.value)
+              }
+            />
+
+            <input
+              type="text"
+              placeholder="Dinner"
+              value={foodMenu[day].dinner}
+              onChange={(e) =>
+                handleFoodMenuChange(day, "dinner", e.target.value)
+              }
+            />
           </div>
         ))}
 
-        <button type="button" className="add-sharing-btn" onClick={addSharingRow}>
-          ➕ Add Another Sharing
-        </button>
+        {/* Images */}
+        <h3>Upload Images</h3>
+        <input type="file" multiple accept="image/*" onChange={handleImageChange} />
 
-    <div className="floor-rooms-section">
-   <h3 className="black-text">Select PG Floors and Rooms</h3>
-  
-  <div className="floor-input-group">
-    <div className="input-field">
-      <label>1. Number of Floors in your building</label>
-      <input 
-        type="number" 
-        min="1" 
-        max="10"
-        placeholder="e.g., 3"
-        value={numFloors}
-        onChange={(e) => setNumFloors(e.target.value)}
-      />
-    </div>
-    
-    <div className="input-field">
-      <label>2. Number of Rooms in a Floor</label>
-      <input 
-        type="number" 
-        min="1" 
-        max="20"
-        placeholder="e.g., 5"
-        value={roomsPerFloor}
-        onChange={(e) => setRoomsPerFloor(e.target.value)}
-      />
-    </div>
-    
-    <div className="input-field">
-      <label>3. Enter Starting Room number</label>
-      <input 
-        type="text" 
-        placeholder="e.g., 101 or G01"
-        value={startingRoomNumber}
-        onChange={(e) => setStartingRoomNumber(e.target.value)}
-      />
-    </div>
-  </div>
-  
-  </div>
-
-   <div className="advance-amount-section">
-          <h3 className="black-text">Advance Amount</h3>
-          <div className="advance-input-group">
-            <input 
-              type="number"
-              placeholder="Enter advance amount"
-              value={advanceAmount}
-              onChange={(e) => setAdvanceAmount(e.target.value)}
-            />
-          </div>
-          </div>
-
-       
-
-        <label>Food Menu Details</label>
-        <div className="food-menu-table">
-          <table>
-            <thead>
-              <tr>
-                <th>DAYS</th>
-                <th>BREAKFAST</th>
-                <th>LUNCH</th>
-                <th>DINNER</th>
-              </tr>
-            </thead>
-            <tbody>
-              {days.map((day) => (
-                <tr key={day}>
-                  <td className="day-cell">{day.toUpperCase()}</td>
-                  <td>
-                    <input type="text" placeholder="Breakfast" value={foodMenu[day].breakfast} onChange={(e) => handleFoodChange(day, "breakfast", e.target.value)} />
-                  </td>
-                  <td>
-                    <input type="text" placeholder="Lunch" value={foodMenu[day].lunch} onChange={(e) => handleFoodChange(day, "lunch", e.target.value)} />
-                  </td>
-                  <td>
-                    <input type="text" placeholder="Dinner" value={foodMenu[day].dinner} onChange={(e) => handleFoodChange(day, "dinner", e.target.value)} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <label>Furnished Amenities</label>
-        <div className="furnished-icons">
-          {[
-            { icon: <FaWifi />, name: "Free WiFi" },
-            { icon: <FaFan />, name: "Fan" },
-            { icon: <FaBed />, name: "Bed" },
-            { icon: <FaLightbulb />, name: "Lights" },
-            { icon: <FaChair />, name: "Cupboard" },
-            { icon: <FaShower />, name: "Geyser" },
-            { icon: <FaThermometerHalf />, name: "Water" },
-            { icon: <FaDumbbell />, name: "Gym" },
-            { icon: <FaTv />, name: "TV" },
-            { icon: <FaUtensils />, name: "Food" },
-            { icon: <FaCar />, name: "Parking" },
-            { icon: <FaSnowflake />, name: "AC" },
-          ].map((f, i) => (
-            <div key={i} className={`furnish-icon ${selectedFurnish.includes(f.name) ? "selected" : ""}`} onClick={() => toggleFurnish(f.name)}>
-              {f.icon}
-              <span>{f.name}</span>
-            </div>
+        <div className="preview-box">
+          {previewImages.map((img, index) => (
+            <img key={index} src={img} alt="preview" className="preview-img" />
           ))}
         </div>
 
-        <label>Rules</label>
-        <div className="rules-section">
-          {rules.map((rule, index) => (
-            <div key={index} className={`rule-item ${selectedRules.includes(rule.name) ? "selected" : ""}`} onClick={() => toggleRule(rule.name)}>
-              {rule.icon}
-              <span>{rule.name}</span>
-            </div>
-          ))}
-          <div
-            className="rule-item add-rule"
-            onClick={() => {
-              const newRule = prompt("Enter new rule:");
-              if (newRule) setRules((prev) => [...prev, { name: newRule, icon: <FaPlus /> }]);
-            }}
-          >
-            <FaPlus />
-          </div>
-        </div>
-
-        <button type="submit" className="submit-btn" disabled={loading}>
-          {loading ? "Saving..." : "Upload PG"}
+        {/* Submit */}
+        <button type="submit" className="upload-btn">
+          <FaUpload /> Upload Hostel
         </button>
       </form>
 
-      {/* ROOM SETUP POPUP */}
-      {showRoomSetup && <RoomSetupPopup onClose={() => setShowRoomSetup(false)} onGenerate={saveGeneratedRooms} />}
+      {/* Popup (optional) */}
+      {showRoomPopup && (
+        <RoomSetupPopup
+          onClose={() => setShowRoomPopup(false)}
+          totalRooms={totalRooms}
+        />
+      )}
     </div>
   );
 };
