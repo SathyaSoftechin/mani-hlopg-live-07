@@ -28,32 +28,29 @@ import chennaiBg from "../../assets/chennai.png";
 import bangaloreBg from "../../assets/bangalore.png";
 import mumbaiBg from "../../assets/mumbai.png";
 
-// ✅ Add default fallback image
-const defaultCityBg =
-  "https://via.placeholder.com/1400x400?text=City+Hostels";
-
 const cityImages = {
   hyderabad: hyderabadBg,
   chennai: chennaiBg,
   bangalore: bangaloreBg,
-  bengaluru: bangaloreBg, // ✅ added support
   mumbai: mumbaiBg,
 };
 
-// ✅ Same image URL helper from Home.jsx
+// ✅ Correct base URL
+const BASE_URL = "https://www.hlopg.com";
+
+// ✅ Fixed image URL helper
 const getFullImageUrl = (imagePath) => {
-  if (!imagePath)
-    return "https://via.placeholder.com/300x200?text=Hostel";
+  if (!imagePath) return "https://via.placeholder.com/300x200?text=Hostel";
 
   if (imagePath.startsWith("http")) {
     return imagePath;
   }
 
   if (imagePath.startsWith("/uploads")) {
-    return `https://hlopg.com${imagePath}`;
+    return `${BASE_URL}${imagePath}`;
   }
 
-  return `https://hlopg.com/uploads/${imagePath}`;
+  return `${BASE_URL}/uploads/${imagePath}`;
 };
 
 const CityHostels = () => {
@@ -64,21 +61,10 @@ const CityHostels = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ area: "All", pg_type: "All" });
 
-  // City title
-  const cityTitle = cityName
-    ? cityName.charAt(0).toUpperCase() + cityName.slice(1).toLowerCase()
-    : "City";
-
-  // ✅ Fix hero background safely
-  const heroBg =
-    cityImages[cityName?.toLowerCase()] || defaultCityBg;
-
   useEffect(() => {
     const fetchHostels = async () => {
       try {
         setLoading(true);
-
-        console.log("📌 Fetching hostels for city:", cityName);
 
         const res = await api.get(`/hostel/gethostels?city=${cityName}`);
 
@@ -95,7 +81,6 @@ const CityHostels = () => {
           });
 
           const mappedHostels = filteredHostels.map((h) => {
-            // ✅ Get main image
             let mainImage = "https://via.placeholder.com/300x200?text=Hostel";
 
             if (h.images && Array.isArray(h.images) && h.images.length > 0) {
@@ -104,7 +89,6 @@ const CityHostels = () => {
               mainImage = getFullImageUrl(h.img);
             }
 
-            // ✅ Facilities parsing
             let facilities = {};
             try {
               facilities =
@@ -115,7 +99,6 @@ const CityHostels = () => {
               facilities = {};
             }
 
-            // ✅ Sharing parsing
             let sharing = "Not specified";
             try {
               const sharingData =
@@ -125,6 +108,7 @@ const CityHostels = () => {
 
               if (sharingData && typeof sharingData === "object") {
                 const entries = Object.entries(sharingData);
+
                 if (entries.length > 0) {
                   sharing = entries
                     .map(([type, price]) => {
@@ -152,7 +136,6 @@ const CityHostels = () => {
               console.log("Error parsing sharing:", e);
             }
 
-            // ✅ Gender label
             let genderLabel = "👨🏻‍💼 Men's PG";
             const genderText = (h.pg_type || "").toLowerCase();
 
@@ -162,7 +145,6 @@ const CityHostels = () => {
               genderLabel = "👫 Co-Living";
             }
 
-            // ✅ Facility icons map
             const facilityMap = {
               wifi: { name: "WiFi", icon: <FaWifi /> },
               parking: { name: "Parking", icon: <FaParking /> },
@@ -180,14 +162,12 @@ const CityHostels = () => {
             };
 
             const facilitiesList = [];
-
             Object.entries(facilities).forEach(([key, value]) => {
               if (value && facilityMap[key]) {
                 facilitiesList.push(facilityMap[key]);
               }
             });
 
-            // Default if empty
             if (facilitiesList.length === 0) {
               facilitiesList.push(
                 { name: "Beds", icon: <FaBed /> },
@@ -203,6 +183,7 @@ const CityHostels = () => {
               name: h.hostel_name || h.name || "Unnamed Hostel",
               area: h.area || "Unknown Area",
               location: h.area || h.city || h.address || "Unknown Location",
+              price: h.price ? `₹${h.price}` : h.rent ? `₹${h.rent}` : "₹5000",
               rating: h.rating || 4.5,
               facilities: facilitiesList.slice(0, 6),
               sharing: sharing,
@@ -227,16 +208,14 @@ const CityHostels = () => {
       }
     };
 
-    if (cityName) fetchHostels();
+    fetchHostels();
   }, [cityName]);
 
-  // Filter options
   const filterOptions = {
     area: ["All", ...new Set(hostels.map((pg) => pg.area).filter(Boolean))],
     pg_type: ["All", ...new Set(hostels.map((pg) => pg.pg_type).filter(Boolean))],
   };
 
-  // Filtering logic
   const filteredPGs = hostels.filter((pg) =>
     Object.entries(filters).every(([key, value]) =>
       value === "All" ? true : pg[key] === value
@@ -246,27 +225,8 @@ const CityHostels = () => {
   const handleFilterChange = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
-  const getFacilityIcon = (facilityName) => {
-    const iconMap = {
-      WiFi: <FaWifi />,
-      Parking: <FaParking />,
-      AC: <FaSnowflake />,
-      TV: <FaTv />,
-      Gym: <FaDumbbell />,
-      "Hot Water": <FaShower />,
-      Fan: <FaFan />,
-      Bed: <FaBed />,
-      Beds: <FaBed />,
-      Lights: <FaLightbulb />,
-      Cupboard: <FaChair />,
-      Food: <FaUtensils />,
-      "24/7 Water": <FaShower />,
-      Cleaning: <FaBroom />,
-      Clean: <FaBroom />,
-      Wash: <FaShower />,
-    };
-    return iconMap[facilityName] || <FaHome />;
-  };
+  const cityTitle =
+    cityName.charAt(0).toUpperCase() + cityName.slice(1).toLowerCase();
 
   if (loading) {
     return (
@@ -281,8 +241,14 @@ const CityHostels = () => {
     <div className="city-page">
       <Header />
 
-      {/* HERO */}
-      <div className="city-hero" style={{ backgroundImage: `url(${heroBg})` }}>
+      <div
+        className="city-hero"
+        style={{
+          backgroundImage: `url(${
+            cityImages[cityName.toLowerCase()] || hyderabadBg
+          })`,
+        }}
+      >
         <div className="city-overlay">
           <h1>Hostels in {cityTitle}</h1>
           <p>
@@ -292,7 +258,6 @@ const CityHostels = () => {
         </div>
       </div>
 
-      {/* Filters */}
       {hostels.length > 0 && (
         <div className="area-gender-filter">
           {Object.keys(filterOptions).map((key, idx) => (
@@ -315,7 +280,6 @@ const CityHostels = () => {
         </div>
       )}
 
-      {/* Hostel cards */}
       {filteredPGs.length === 0 ? (
         <p className="no-results">
           {hostels.length === 0
@@ -330,7 +294,6 @@ const CityHostels = () => {
               className="city-pg-card"
               onClick={() => navigate(`/hostel/${pg.id}`)}
             >
-              {/* IMAGE */}
               <div className="city-pg-image">
                 <div className="image-container">
                   <img
@@ -346,7 +309,6 @@ const CityHostels = () => {
                 <FaHeart className="city-wishlist" />
               </div>
 
-              {/* INFO */}
               <div className="city-pg-info">
                 <div className="pg-header">
                   <h3 className="pg-name">{pg.name}</h3>
@@ -375,7 +337,7 @@ const CityHostels = () => {
                     {pg.facilities.map((facility, index) => (
                       <div key={index} className="facility-item">
                         <span className="facility-icon">
-                          {facility.icon || getFacilityIcon(facility.name)}
+                          {facility.icon || <FaHome />}
                         </span>
                         <span className="facility-name">{facility.name}</span>
                       </div>
@@ -383,7 +345,6 @@ const CityHostels = () => {
                   </div>
                 </div>
               </div>
-
             </div>
           ))}
         </div>
