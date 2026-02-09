@@ -4,7 +4,6 @@ import {
   FaHeart,
   FaStar,
   FaShower,
-  FaCheckCircle,
   FaWifi,
   FaParking,
   FaBed,
@@ -19,6 +18,7 @@ import {
   FaLightbulb,
   FaChair,
 } from "react-icons/fa";
+
 import Header from "../../components/Header";
 import api from "../../api";
 import "./CityHostels.css";
@@ -28,30 +28,32 @@ import chennaiBg from "../../assets/chennai.png";
 import bangaloreBg from "../../assets/bangalore.png";
 import mumbaiBg from "../../assets/mumbai.png";
 
+// ✅ Add default fallback image
+const defaultCityBg =
+  "https://via.placeholder.com/1400x400?text=City+Hostels";
+
 const cityImages = {
   hyderabad: hyderabadBg,
   chennai: chennaiBg,
   bangalore: bangaloreBg,
+  bengaluru: bangaloreBg, // ✅ added support
   mumbai: mumbaiBg,
 };
 
-// Add the same image URL helper from Home.jsx
+// ✅ Same image URL helper from Home.jsx
 const getFullImageUrl = (imagePath) => {
-  if (!imagePath) return "https://via.placeholder.com/300x200?text=Hostel";
-  
-  if (imagePath.startsWith('http')) {
+  if (!imagePath)
+    return "https://via.placeholder.com/300x200?text=Hostel";
+
+  if (imagePath.startsWith("http")) {
     return imagePath;
   }
-  
-  if (imagePath.startsWith('/uploads')) {
+
+  if (imagePath.startsWith("/uploads")) {
     return `https://hlopg.com${imagePath}`;
   }
-  
-  if (imagePath) {
-    return `https://hlopg.com/uploads/${imagePath}`;
-  }
-  
-  return "https://via.placeholder.com/300x200?text=Hostel";
+
+  return `https://hlopg.com/uploads/${imagePath}`;
 };
 
 const CityHostels = () => {
@@ -62,79 +64,105 @@ const CityHostels = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ area: "All", pg_type: "All" });
 
+  // City title
+  const cityTitle = cityName
+    ? cityName.charAt(0).toUpperCase() + cityName.slice(1).toLowerCase()
+    : "City";
+
+  // ✅ Fix hero background safely
+  const heroBg =
+    cityImages[cityName?.toLowerCase()] || defaultCityBg;
+
   useEffect(() => {
     const fetchHostels = async () => {
       try {
         setLoading(true);
-        
-        // Use the existing endpoint with city parameter
+
+        console.log("📌 Fetching hostels for city:", cityName);
+
         const res = await api.get(`/hostel/gethostels?city=${cityName}`);
-        
+
         console.log(`${cityName} hostels response:`, res.data);
-        
+
         if (res.data.success && Array.isArray(res.data.hostels)) {
-          const filteredHostels = res.data.hostels.filter(hostel => {
+          const filteredHostels = res.data.hostels.filter((hostel) => {
             if (!hostel.city) return false;
-            // Match city name (case-insensitive)
-            return hostel.city.toLowerCase().includes(cityName.toLowerCase()) ||
-                   cityName.toLowerCase().includes(hostel.city.toLowerCase());
+
+            return (
+              hostel.city.toLowerCase().includes(cityName.toLowerCase()) ||
+              cityName.toLowerCase().includes(hostel.city.toLowerCase())
+            );
           });
-          
+
           const mappedHostels = filteredHostels.map((h) => {
-            // Get main image - using same logic as Home.jsx
+            // ✅ Get main image
             let mainImage = "https://via.placeholder.com/300x200?text=Hostel";
+
             if (h.images && Array.isArray(h.images) && h.images.length > 0) {
               mainImage = getFullImageUrl(h.images[0]);
             } else if (h.img) {
               mainImage = getFullImageUrl(h.img);
             }
-            
-            // Get facilities
+
+            // ✅ Facilities parsing
             let facilities = {};
             try {
-              facilities = typeof h.facilities === 'string' 
-                ? JSON.parse(h.facilities) 
-                : h.facilities || {};
+              facilities =
+                typeof h.facilities === "string"
+                  ? JSON.parse(h.facilities)
+                  : h.facilities || {};
             } catch {
               facilities = {};
             }
-            
-            // Get sharing info
+
+            // ✅ Sharing parsing
             let sharing = "Not specified";
             try {
-              const sharingData = typeof h.sharing_data === 'string' 
-                ? JSON.parse(h.sharing_data) 
-                : h.sharing_data;
-              
-              if (sharingData && typeof sharingData === 'object') {
+              const sharingData =
+                typeof h.sharing_data === "string"
+                  ? JSON.parse(h.sharing_data)
+                  : h.sharing_data;
+
+              if (sharingData && typeof sharingData === "object") {
                 const entries = Object.entries(sharingData);
                 if (entries.length > 0) {
-                  sharing = entries.map(([type, price]) => {
-                    const typeText = type === 'single' ? '1-Sharing' : 
-                                    type === 'double' ? '2-Sharing' : 
-                                    type === 'triple' ? '3-Sharing' : 
-                                    type === 'four' ? '4-Sharing' : 
-                                    type === 'five' ? '5-Sharing' : 
-                                    type === 'six' ? '6-Sharing' : 
-                                    `${type}-Sharing`;
-                    return `${typeText} - ₹${price}`;
-                  }).join(', ');
+                  sharing = entries
+                    .map(([type, price]) => {
+                      const typeText =
+                        type === "single"
+                          ? "1-Sharing"
+                          : type === "double"
+                          ? "2-Sharing"
+                          : type === "triple"
+                          ? "3-Sharing"
+                          : type === "four"
+                          ? "4-Sharing"
+                          : type === "five"
+                          ? "5-Sharing"
+                          : type === "six"
+                          ? "6-Sharing"
+                          : `${type}-Sharing`;
+
+                      return `${typeText} - ₹${price}`;
+                    })
+                    .join(", ");
                 }
               }
             } catch (e) {
               console.log("Error parsing sharing:", e);
             }
-            
-            // Gender display
+
+            // ✅ Gender label
             let genderLabel = "👨🏻‍💼 Men's PG";
             const genderText = (h.pg_type || "").toLowerCase();
+
             if (genderText.includes("women") || genderText.includes("female")) {
               genderLabel = "💁🏻‍♀️ Women's PG";
             } else if (genderText.includes("co") || genderText.includes("mixed")) {
               genderLabel = "👫 Co-Living";
             }
-            
-            // Facilities list for display - using same logic as Home.jsx
+
+            // ✅ Facility icons map
             const facilityMap = {
               wifi: { name: "WiFi", icon: <FaWifi /> },
               parking: { name: "Parking", icon: <FaParking /> },
@@ -148,17 +176,18 @@ const CityHostels = () => {
               cupboard: { name: "Cupboard", icon: <FaChair /> },
               food: { name: "Food", icon: <FaUtensils /> },
               water: { name: "24/7 Water", icon: <FaShower /> },
-              clean: { name: "Cleaning", icon: <FaBroom /> }
+              clean: { name: "Cleaning", icon: <FaBroom /> },
             };
-            
+
             const facilitiesList = [];
+
             Object.entries(facilities).forEach(([key, value]) => {
               if (value && facilityMap[key]) {
                 facilitiesList.push(facilityMap[key]);
               }
             });
-            
-            // Add default if empty
+
+            // Default if empty
             if (facilitiesList.length === 0) {
               facilitiesList.push(
                 { name: "Beds", icon: <FaBed /> },
@@ -167,16 +196,15 @@ const CityHostels = () => {
                 { name: "Wash", icon: <FaShower /> }
               );
             }
-            
+
             return {
               id: h.hostel_id || h.id,
               img: mainImage,
               name: h.hostel_name || h.name || "Unnamed Hostel",
               area: h.area || "Unknown Area",
               location: h.area || h.city || h.address || "Unknown Location",
-              price: h.price ? `₹${h.price}` : h.rent ? `₹${h.rent}` : "₹5000",
               rating: h.rating || 4.5,
-              facilities: facilitiesList.slice(0, 6), // Show max 6 facilities
+              facilities: facilitiesList.slice(0, 6),
               sharing: sharing,
               pg_type: genderText || "hostel",
               genderLabel: genderLabel,
@@ -184,7 +212,7 @@ const CityHostels = () => {
               description: h.description || "",
             };
           });
-          
+
           console.log(`Mapped ${mappedHostels.length} hostels for ${cityName}`);
           setHostels(mappedHostels);
         } else {
@@ -199,10 +227,10 @@ const CityHostels = () => {
       }
     };
 
-    fetchHostels();
+    if (cityName) fetchHostels();
   }, [cityName]);
 
-  // Dynamic filter options
+  // Filter options
   const filterOptions = {
     area: ["All", ...new Set(hostels.map((pg) => pg.area).filter(Boolean))],
     pg_type: ["All", ...new Set(hostels.map((pg) => pg.pg_type).filter(Boolean))],
@@ -217,9 +245,6 @@ const CityHostels = () => {
 
   const handleFilterChange = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
-
-  const cityTitle =
-    cityName.charAt(0).toUpperCase() + cityName.slice(1).toLowerCase();
 
   const getFacilityIcon = (facilityName) => {
     const iconMap = {
@@ -254,12 +279,10 @@ const CityHostels = () => {
 
   return (
     <div className="city-page">
-      
+      <Header />
 
-      <div
-        className="city-hero"
-        style={{ backgroundImage: `url(${cityImages[cityName.toLowerCase()]})` }}
-      >
+      {/* HERO */}
+      <div className="city-hero" style={{ backgroundImage: `url(${heroBg})` }}>
         <div className="city-overlay">
           <h1>Hostels in {cityTitle}</h1>
           <p>
@@ -295,8 +318,8 @@ const CityHostels = () => {
       {/* Hostel cards */}
       {filteredPGs.length === 0 ? (
         <p className="no-results">
-          {hostels.length === 0 
-            ? `No hostels found in ${cityTitle}` 
+          {hostels.length === 0
+            ? `No hostels found in ${cityTitle}`
             : "No PGs found with selected filters"}
         </p>
       ) : (
@@ -307,24 +330,24 @@ const CityHostels = () => {
               className="city-pg-card"
               onClick={() => navigate(`/hostel/${pg.id}`)}
             >
-              {/* Card Image Section - Matching Home.jsx style */}
+              {/* IMAGE */}
               <div className="city-pg-image">
                 <div className="image-container">
-                  <img 
-                    src={pg.img} 
-                    alt={pg.name} 
+                  <img
+                    src={pg.img}
+                    alt={pg.name}
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = "https://via.placeholder.com/300x200?text=Hostel";
-                    }} 
+                      e.target.src =
+                        "https://via.placeholder.com/300x200?text=Hostel";
+                    }}
                   />
                 </div>
                 <FaHeart className="city-wishlist" />
               </div>
 
-              {/* Card Details - Matching Home.jsx structure */}
+              {/* INFO */}
               <div className="city-pg-info">
-                {/* Hostel Name & Rating */}
                 <div className="pg-header">
                   <h3 className="pg-name">{pg.name}</h3>
                   <div className="pg-rating">
@@ -333,34 +356,21 @@ const CityHostels = () => {
                   </div>
                 </div>
 
-                {/* Location */}
-                <p className="pg-location">
-                  {/* <span className="location-icon">📍</span> */}
-                  {pg.location}
-                </p>
+                <p className="pg-location">{pg.location}</p>
 
-                {/* Gender Type */}
                 <div className="pg-type-badges">
                   <FaHome />
                   <span>{pg.genderLabel}</span>
                 </div>
 
-                {/* Sharing & Price Section */}
                 <div className="sharing-price-section">
                   <div className="sharing-info">
                     <FaUserFriends />
                     <span className="sharing-text">{pg.sharing}</span>
                   </div>
-                  {/* <div className="price-tag">
-                    <span className="price-label">Starts From:</span>
-                    <h4 className="price">{pg.price}</h4>
-                    <span className="per-month">/month</span>
-                  </div> */}
                 </div>
 
-                {/* Facilities Grid */}
                 <div className="facilities-section">
-                  {/* <h4 className="facilities-title">Facilities:</h4> */}
                   <div className="facilities-grid">
                     {pg.facilities.map((facility, index) => (
                       <div key={index} className="facility-item">
@@ -373,6 +383,7 @@ const CityHostels = () => {
                   </div>
                 </div>
               </div>
+
             </div>
           ))}
         </div>
