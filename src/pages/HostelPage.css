@@ -1132,3 +1132,226 @@
   font-weight: bold !important;
   color: #ff4757 !important;
 }
+/* ================= EXACT FOOD MENU UI  ================= */
+ 
+.food-menu {
+  margin: 30px auto;
+  padding: 25px 20px 30px;
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 1400px;
+  border: 1px solid #eee;
+}
+ 
+.food-menu-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 600;
+  color: #7c6cff;
+  margin-bottom: 28px;
+}
+ 
+/* GRID */
+.food-menu-grid {
+  display: grid;
+  grid-template-columns: 140px repeat(3, 1fr);
+  column-gap: 26px;
+  row-gap: 14px;
+}
+ 
+/* COMMON COLUMN */
+.food-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+ 
+/* HEADERS */
+.food-col-header {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  border-radius: 2px;
+  text-align: left;
+  letter-spacing: 0.3px;
+}
+ 
+/* DAYS COLUMN */
+.days-col .food-col-header {
+  background: #b7a8e6;
+}
+ 
+.day-cell {
+  background: #e6e6ec;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+ 
+/* BREAKFAST */
+.breakfast-header {
+  background: #6bb79a;
+}
+ 
+.breakfast-col .food-cell {
+  background: #dff8ef;
+}
+ 
+/* LUNCH */
+.lunch-header {
+  background: #ff8a73;
+}
+ 
+.lunch-col .food-cell {
+  background: #ffe9e4;
+}
+ 
+/* DINNER */
+.dinner-header {
+  background: #e760b0;
+}
+ 
+.dinner-col .food-cell {
+  background: #fbdcf1;
+}
+ 
+/* FOOD CELLS */
+.food-cell {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #333;
+  border-radius: 2px;
+  line-height: 1.4;
+}
+ 
+/* EMPTY / LOADING */
+.no-food-menu,
+.loading-food {
+  text-align: center;
+  padding: 30px;
+  font-size: 14px;
+  color: #666;
+}
+ 
+/* ================= FOOD MENU MOBILE GRID FIX ================= */
+ 
+@media (max-width: 768px) {
+ 
+  /* Allow horizontal scroll */
+  .food-menu {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+ 
+  /* Force grid to keep its width */
+  .food-menu-table {
+    min-width: 720px; /* IMPORTANT */
+    grid-template-columns: 140px 200px 200px 220px;
+  }
+ 
+  /* Prevent text collapsing */
+  .food-menu-table > div {
+    white-space: normal;
+    word-break: break-word;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+ 
+  /* Days column */
+  .fm-day {
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+  }
+ 
+  /* Headers */
+  .fm-header {
+    font-size: 13px;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+ 
+/* ---------- Sharing Price   ---------- */
+.sharing-wrapper {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+ 
+.sharing-item {
+  min-width: 90px;
+  text-align: center;
+  flex-shrink: 0;
+}
+ 
+.sharing-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid #e5e5e5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  background: #fff;
+}
+ 
+.sharing-count {
+  font-size: 16px;
+  font-weight: 600;
+}
+ 
+.sharing-icon {
+  font-size: 12px;
+  color: #9a9a9a;
+}
+ 
+.sharing-price {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6a5cff;
+}
+ 
+/* ---------- Sharing and Priceing for Desktop ---------- */
+@media (min-width: 768px) {
+  .sharing-wrapper {
+    overflow-x: visible;
+  }
+ 
+  .sharing-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: auto;
+    text-align: left;
+  }
+ 
+  .sharing-circle {
+    width: 44px;   /* smaller circle */
+    height: 44px;
+    margin: 0;
+  }
+ 
+  .sharing-count {
+    font-size: 14px;
+  }
+ 
+  .sharing-icon {
+    font-size: 10px;
+  }
+ 
+  .sharing-price {
+    margin-top: 0;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
