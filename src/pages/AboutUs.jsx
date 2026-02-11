@@ -1,361 +1,233 @@
 import React, { useState } from "react";
-import "./AuthModal.css";
-import api from "../api";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { GoogleLogin } from "@react-oauth/google";
+import "./AboutUs.css";
+import {
+  FaShieldAlt,
+  FaRupeeSign,
+  FaSearch,
+  FaUsers,
+  FaFilter,
+  FaHeadset,
+  FaChevronDown,
+  FaChevronUp,
+} from "react-icons/fa";
 
-const AuthModal = ({ isOpen, onClose, onSuccess }) => {
-  const [step, setStep] = useState("signup"); // signup -> otp -> login
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+// Import assets
+import aboutMain from "../assets/main.png"; // main left image
+import icon1 from "../assets/icon1.png";
+import icon2 from "../assets/icon2.png";
+import icon3 from "../assets/icon3.png";
+import icon4 from "../assets/icon4.png";
+import missionImg from "../assets/mission.png"; // replace with your image
+import visionImg from "../assets/vision.png";   // replace with your image
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-  });
+function AboutUs() {
+  const [openIndex, setOpenIndex] = useState(null);
 
-  const [loginData, setLoginData] = useState({
-    identifier: "",
-    password: "",
-  });
-
-  const [otp, setOtp] = useState(["", "", "", ""]);
-  const [tempPhone, setTempPhone] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  if (!isOpen) return null;
-
-  // ===================== GOOGLE LOGIN =====================
-  const handleGoogleLogin = async (credentialResponse) => {
-    try {
-      setLoading(true);
-      setMessage("");
-
-      const res = await api.post("/auth/google", {
-        token: credentialResponse.credential,
-      });
-
-      if (res.data.success) {
-        // Store token & user
-        localStorage.setItem("hlopgToken", res.data.token);
-        localStorage.setItem("hlopgUser", JSON.stringify(res.data.user));
-
-        setMessage("✅ Google Login Successful!");
-
-        setTimeout(() => {
-          onSuccess();
-          onClose();
-        }, 1000);
-      } else {
-        setMessage(res.data.message || "Google Login Failed");
-      }
-    } catch (err) {
-      console.error("Google Login Error:", err);
-      setMessage(err.response?.data?.message || "Google Login Failed");
-    } finally {
-      setLoading(false);
-    }
+  const toggleFAQ = (index) => {
+    setOpenIndex(openIndex === index ? null : index);
   };
 
-  // ===================== SIGNUP =====================
-  const handleSignupSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await api.post("/auth/register/user", formData);
-
-      if (res.data.success) {
-        setTempPhone(formData.phone);
-        setStep("otp");
-        setMessage("OTP sent!");
-      } else {
-        setMessage(res.data.message);
-      }
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ===================== OTP VERIFY =====================
-  const verifyOTP = async () => {
-    const enteredOTP = otp.join("");
-    if (enteredOTP.length !== 4) return setMessage("Enter 4-digit OTP");
-
-    setLoading(true);
-    try {
-      const res = await api.post("/auth/verify-otp", {
-        identifier: tempPhone,
-        otpCode: enteredOTP,
-        purpose: "REGISTRATION",
-      });
-
-      if (res.data.success) {
-        setStep("login");
-        setMessage("✅ Registration complete. Please login.");
-        setOtp(["", "", "", ""]);
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          password: "",
-          confirmPassword: "",
-        });
-      } else {
-        setMessage(res.data.message || "OTP failed");
-      }
-    } catch (err) {
-      setMessage(err.response?.data?.message || "OTP failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ===================== LOGIN =====================
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const res = await api.post("/auth/login/user", loginData);
-
-      if (res.data.success) {
-        localStorage.setItem("hlopgToken", res.data.data.token);
-        localStorage.setItem("hlopgUser", JSON.stringify(res.data.data.user));
-
-        setMessage("✅ Login successful!");
-
-        setTimeout(() => {
-          onSuccess();
-          onClose();
-        }, 1000);
-      } else {
-        setMessage(res.data.message);
-      }
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const faqs = [
+    {
+      question: "How do I book a PG through HloPG?",
+      answer:
+        "Simply browse verified listings, choose the property you like, and contact the owner directly through our platform.",
+    },
+    {
+      question: "Are the listings really verified?",
+      answer:
+        "Yes! Our team physically visits and verifies every property for authenticity, safety, and cleanliness.",
+    },
+    {
+      question: "Do I have to pay any brokerage fees?",
+      answer:
+        "No, we connect you directly with property owners. There are zero brokerage charges on our platform.",
+    },
+    {
+      question: "What kind of support do you provide?",
+      answer:
+        "Our support team is available to guide you throughout your search and moving process, ensuring a hassle-free experience.",
+    },
+  ];
 
   return (
-    <div className="auth-modal-overlay" onClick={onClose}>
-      <div className="auth-card" onClick={(e) => e.stopPropagation()}>
-        <button className="auth-close-btn" onClick={onClose}>
-          ✕
-        </button>
-
-        {/* Logo */}
-        <div className="auth-logo">
-          <img src="/logo.png" alt="Logo" />
+    <div className="aboutus-wrapper">
+      {/* ================= About Us Section ================= */}
+      <div className="aboutus-container">
+        {/* Left Image */}
+        <div className="aboutus-image">
+          <img src={aboutMain} alt="About Hlo PG" />
         </div>
 
-        {/* Message */}
-        {message && <div className="auth-message">{message}</div>}
+        {/* Right Content */}
+        <div className="aboutus-content">
+          <h2 className="aboutus-heading">
+            Find Your Perfect <br /> PG Hostel’s with <span>HloPG</span>
+          </h2>
+          <p className="aboutus-subtitle">
+            From students to professionals, we’ve got you covered. <br />
+            Discover verified PGs that feel like home.
+          </p>
 
-        {/* ===================== SIGNUP ===================== */}
-        {step === "signup" && (
-          <form className="auth-form" onSubmit={handleSignupSubmit}>
-            <h2>Signup</h2>
-
-            <input
-              type="text"
-              placeholder="Name"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              required
-            />
-
-            <input
-              type="text"
-              placeholder="Mobile Number"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              required
-            />
-
-            <input
-              type="email"
-              placeholder="Enter Email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              required
-            />
-
-            <div className="auth-password-wrapper">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter Password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                required
-              />
-              <span
-                className="auth-eye"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <AiOutlineEyeInvisible size={20} />
-                ) : (
-                  <AiOutlineEye size={20} />
-                )}
-              </span>
+          {/* Icons */}
+          <div className="aboutus-icons">
+            <div className="aboutus-icon-item">
+              <img src={icon1} alt="Feature 1" />
+              <p>Verified Listings</p>
             </div>
-
-            <div className="auth-password-wrapper">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    confirmPassword: e.target.value,
-                  })
-                }
-                required
-              />
-              <span
-                className="auth-eye"
-                onClick={() =>
-                  setShowConfirmPassword(!showConfirmPassword)
-                }
-              >
-                {showConfirmPassword ? (
-                  <AiOutlineEyeInvisible size={20} />
-                ) : (
-                  <AiOutlineEye size={20} />
-                )}
-              </span>
+            <div className="aboutus-icon-item">
+              <img src={icon2} alt="Feature 2" />
+              <p>No Hidden Fees</p>
             </div>
-
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? "Signing up..." : "Verify"}
-            </button>
-
-            <div className="auth-switch">
-              Do you have an Account?{" "}
-              <span onClick={() => setStep("login")}>Login</span>
+            <div className="aboutus-icon-item">
+              <img src={icon3} alt="Feature 3" />
+              <p>Trusted Owners</p>
             </div>
-
-            <div className="auth-or">Or</div>
-
-            {/* ✅ GOOGLE SIGNUP BUTTON */}
-            <div className="google-btn-wrapper">
-              <GoogleLogin
-                onSuccess={handleGoogleLogin}
-                onError={() => setMessage("Google Login Failed")}
-              />
+            <div className="aboutus-icon-item">
+              <img src={icon4} alt="Feature 4" />
+              <p>Quick Support</p>
             </div>
-          </form>
-        )}
-
-        {/* ===================== OTP ===================== */}
-        {step === "otp" && (
-          <div className="auth-otp-section">
-            <h2>Verify OTP</h2>
-            <p>Enter OTP sent to {tempPhone}</p>
-
-            <div className="auth-otp-inputs">
-              {[0, 1, 2, 3].map((idx) => (
-                <input
-                  key={idx}
-                  id={`otp-${idx}`}
-                  type="text"
-                  maxLength="1"
-                  value={otp[idx]}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/, "");
-                    const newOtp = [...otp];
-                    newOtp[idx] = val[0] || "";
-                    setOtp(newOtp);
-
-                    if (val && idx < 3)
-                      document.getElementById(`otp-${idx + 1}`)?.focus();
-                  }}
-                />
-              ))}
-            </div>
-
-            <button onClick={verifyOTP} className="auth-btn" disabled={loading}>
-              {loading ? "Verifying..." : "Verify"}
-            </button>
           </div>
-        )}
-
-        {/* ===================== LOGIN ===================== */}
-        {step === "login" && (
-          <form className="auth-form" onSubmit={handleLoginSubmit}>
-            <h2>Login</h2>
-
-            <input
-              type="text"
-              placeholder="Email / Phone Number"
-              value={loginData.identifier}
-              onChange={(e) =>
-                setLoginData({ ...loginData, identifier: e.target.value })
-              }
-              required
-            />
-
-            <div className="auth-password-wrapper">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter Password"
-                value={loginData.password}
-                onChange={(e) =>
-                  setLoginData({ ...loginData, password: e.target.value })
-                }
-                required
-              />
-              <span
-                className="auth-eye"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <AiOutlineEyeInvisible size={20} />
-                ) : (
-                  <AiOutlineEye size={20} />
-                )}
-              </span>
-            </div>
-
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </button>
-
-            <div className="auth-switch">
-              New User <span onClick={() => setStep("signup")}>Signup</span>
-            </div>
-
-            <div className="auth-or">Or</div>
-
-            {/* ✅ GOOGLE LOGIN BUTTON */}
-            <div className="google-btn-wrapper">
-              <GoogleLogin
-                onSuccess={handleGoogleLogin}
-                onError={() => setMessage("Google Login Failed")}
-              />
-            </div>
-          </form>
-        )}
+        </div>
       </div>
+
+      {/* ================= Why Us Section ================= */}
+      <section className="whyus-section">
+        <h2 className="whyus-heading">
+          Why <span>Us?</span>
+        </h2>
+        <p className="whyus-subtitle">
+          Our platform is built from the ground up to provide a safe,
+          transparent, and hassle-free experience. Here's what makes us
+          different:
+        </p>
+
+        <div className="whyus-cards">
+          <div className="whyus-card">
+            <div className="whyus-icon">
+              <FaShieldAlt />
+            </div>
+            <h3>100% Verified Properties</h3>
+            <p>
+              Every listing is physically visited and verified by our team for
+              authenticity, safety, and cleanliness. What you see is what you
+              get.
+            </p>
+          </div>
+
+          <div className="whyus-card">
+            <div className="whyus-icon">
+              <FaRupeeSign />
+            </div>
+            <h3>Zero Brokerage Fees</h3>
+            <p>
+              We connect you directly with property owners, saving you from
+              unnecessary fees and hidden charges.
+            </p>
+          </div>
+
+          <div className="whyus-card">
+            <div className="whyus-icon">
+              <FaSearch />
+            </div>
+            <h3>Transparent Pricing</h3>
+            <p>
+              No surprises. All rental and deposit info is clearly listed so you
+              can budget with confidence.
+            </p>
+          </div>
+
+          <div className="whyus-card">
+            <div className="whyus-icon">
+              <FaUsers />
+            </div>
+            <h3>Safety-First Community</h3>
+            <p>
+              We prioritize your security by visiting property owners and
+              fostering a community built on trust.
+            </p>
+          </div>
+
+          <div className="whyus-card">
+            <div className="whyus-icon">
+              <FaFilter />
+            </div>
+            <h3>Simple & Fast Search</h3>
+            <p>
+              Our user-friendly platform and powerful filters make finding the
+              perfect home easier than ever.
+            </p>
+          </div>
+
+          <div className="whyus-card">
+            <div className="whyus-icon">
+              <FaHeadset />
+            </div>
+            <h3>Dedicated Support</h3>
+            <p>
+              Our team is here to assist you at every step, from your initial
+              search to moving in.
+            </p>
+          </div>
+        </div>
+      </section>
+      
+      {/* ================= Mission & Vision Section ================= */}
+      <section className="mission-vision-section">
+        <h2 className="mission-vision-heading">
+          About <span>Us</span>
+        </h2>
+        <div className="mission-vision-cards">
+          {/* Mission */}
+          <div className="mv-card">
+            <img src={missionImg} alt="Our Mission" className="mv-img" />
+            <p className="mv-text">
+              To build India's most trusted accommodation platform by
+              prioritizing physical verification and radical transparency. We
+              are committed to ensuring every student and professional can find
+              a safe and comfortable home, stress-free.
+            </p>
+            <h3 className="mv-title">Our Mission</h3>
+          </div>
+
+          {/* Vision */}
+          <div className="mv-card">
+            <img src={visionImg} alt="Our Vision" className="mv-img" />
+            <p className="mv-text">
+              We create a trusted ecosystem of verified services that support
+              every stage of relocation — from housing and food to community and
+              career — empowering individuals to confidently start a new
+              chapter.
+            </p>
+            <h3 className="mv-title">Our Vision</h3>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= FAQ Section ================= */}
+      <section className="faq-section">
+        <h2 className="faq-heading">
+          Frequently Asked <span>Questions</span>
+        </h2>
+        <div className="faq-list">
+          {faqs.map((faq, index) => (
+            <div
+              key={index}
+              className={`faq-item ${openIndex === index ? "active" : ""}`}
+            >
+              <div className="faq-question" onClick={() => toggleFAQ(index)}>
+                <h3>{faq.question}</h3>
+                {openIndex === index ? <FaChevronUp /> : <FaChevronDown />}
+              </div>
+              <p className="faq-answer">{faq.answer}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      
     </div>
   );
-};
+}
 
-export default AuthModal;
+export default AboutUs;
