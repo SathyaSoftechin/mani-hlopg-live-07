@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-
+ 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import IntroVideo from "./components/IntroVideo";
 import LoadingVideo from "./components/LoadingVideo";
-
+ 
 // Pages
 import Home from "./pages/Home";
 import AboutUs from "./pages/AboutUs";
@@ -28,93 +28,82 @@ import UserProfile from "./pages/UserPanel";
 import Contact from "./pages/Contact";
 import ProfilePage from "./pages/ProfilePage";
 import CommonLogin from "./pages/CommonLogin";
-
+ 
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-
+ 
   const [isOwnerLoggedIn, setIsOwnerLoggedIn] = useState(false);
-
-  // Check login status
+  const [showIntro, setShowIntro] = useState(false);
+  const [loading, setLoading] = useState(false);
+ 
+  /* ---------------- LOGIN CHECK ---------------- */
   useEffect(() => {
     const token = localStorage.getItem("hlopgToken");
     const role = localStorage.getItem("hlopgRole");
-
+ 
     const ownerLoggedIn = !!(token && role === "OWNER");
     setIsOwnerLoggedIn(ownerLoggedIn);
-
-    console.log("🔍 Login check:", {
-      token: token ? "Yes" : "No",
-      role,
-      isOwner: ownerLoggedIn,
-      currentPath: location.pathname,
-    });
-
-    // Redirect owner to dashboard if accessing home
+ 
     if (ownerLoggedIn && location.pathname === "/") {
       navigate("/owner-dashboard", { replace: true });
     }
   }, [location.pathname, navigate]);
-
-  // INTRO VIDEO (skip for owners)
-  const [showIntro, setShowIntro] = useState(() => {
+ 
+  /* ---------------- INTRO VIDEO (ONLY ONCE EVER) ---------------- */
+  useEffect(() => {
     const token = localStorage.getItem("hlopgToken");
     const role = localStorage.getItem("hlopgRole");
-
-    if (token && role === "OWNER") return false;
-
-    const seen = localStorage.getItem("seenIntro");
-    return !seen;
-  });
-
-  useEffect(() => {
-    if (!showIntro) {
-      localStorage.setItem("seenIntro", "true");
+    const seenIntro = localStorage.getItem("seenIntro");
+ 
+    if (token && role === "OWNER") return;
+ 
+    if (!seenIntro) {
+      setShowIntro(true);
     }
-  }, [showIntro]);
-
-  // LOADING VIDEO
-  const [loading, setLoading] = useState(false);
-
+  }, []);
+ 
+  const handleIntroFinish = () => {
+    localStorage.setItem("seenIntro", "true");
+    setShowIntro(false);
+  };
+ 
+  /* ---------------- LOADING VIDEO (ONCE PER SESSION) ---------------- */
   useEffect(() => {
-    if (isOwnerLoggedIn) {
+    if (isOwnerLoggedIn || showIntro) return;
+ 
+    const hasLoadedOnce = sessionStorage.getItem("hasLoadedOnce");
+    if (hasLoadedOnce) return;
+ 
+    setLoading(true);
+ 
+    const timer = setTimeout(() => {
       setLoading(false);
-      return;
-    }
-
-    const path = location.pathname;
-
-    if (path === "/" && !showIntro) {
-      setLoading(true);
-      const timer = setTimeout(() => setLoading(false), 2000);
-      return () => clearTimeout(timer);
-    }
-
-    if (path.startsWith("/hostel/") || path.startsWith("/city/")) {
-      setLoading(true);
-      const timer = setTimeout(() => setLoading(false), 1500);
-      return () => clearTimeout(timer);
-    }
+      sessionStorage.setItem("hasLoadedOnce", "true");
+    }, 1500);
+ 
+    return () => clearTimeout(timer);
   }, [location.pathname, showIntro, isOwnerLoggedIn]);
-
+ 
+  /* ---------------- HEADER / FOOTER VISIBILITY ---------------- */
   const hideHeaderFooter =
     location.pathname.startsWith("/owner-dashboard") ||
     location.pathname.startsWith("/view") ||
     location.pathname === "/owner-profile";
-
+ 
   return (
     <div className="app-container">
-      {/* Intro */}
+      {/* Intro Video */}
       {showIntro && !isOwnerLoggedIn && (
-        <IntroVideo onFinish={() => setShowIntro(false)} />
+        <IntroVideo onFinish={handleIntroFinish} />
       )}
-
-      {/* Loading */}
+ 
+      {/* Loading Video */}
       {!showIntro && loading && !isOwnerLoggedIn && <LoadingVideo />}
-
+ 
       {/* Header */}
       {!hideHeaderFooter && !showIntro && !loading && <Header />}
-
+ 
       <main className="content">
         {!showIntro && (
           <Routes>
@@ -138,13 +127,13 @@ function App() {
             />
             <Route path="/login" element={<CommonLogin />} />
             <Route path="/user-dashboard" element={<UserProfile />} />
-
+ 
             {/* Owner Dashboard */}
             <Route
               path="/owner-dashboard"
               element={isOwnerLoggedIn ? <AdminPanel /> : <OwnerLogin />}
             />
-
+ 
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/upload-pg" element={<UploadPG />} />
             <Route path="/my-pgs" element={<MyPGs />} />
@@ -154,11 +143,11 @@ function App() {
           </Routes>
         )}
       </main>
-
+ 
       {/* Footer */}
       {!hideHeaderFooter && !showIntro && !loading && <Footer />}
     </div>
   );
 }
-
+ 
 export default App;
