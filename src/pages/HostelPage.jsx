@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import "./HostelPage.css";
 
-import {
+import {FaUser,
   FaWifi,
   FaFan,
   FaBed,
@@ -184,51 +184,146 @@ const HostelPage = () => {
     fetchHostel();
   }, [hostelId]);
 
-  // ================= FETCH FOOD MENU (FULL FIX) =================
-  useEffect(() => {
-    const fetchFoodMenu = async () => {
-      try {
-        setMenuLoading(true);
-
-        console.log("🍽️ Fetching food menu for hostel:", hostelId);
-
-        const res = await api.get(`/hostel/food_menu/${hostelId}`);
-
-        console.log("✅ Food menu full response:", res.data);
-
-        if (res.data.success) {
-          const data = res.data.data;
-
-          // ✅ Case 1: backend returns direct array
-          if (Array.isArray(data)) {
-            setFoodMenu(data);
-          }
-          // ✅ Case 2: backend returns { menu: [...] }
-          else if (data && Array.isArray(data.menu)) {
-            setFoodMenu(data.menu);
-          }
-          // ✅ Case 3: backend returns object
-          else if (data && typeof data === "object") {
-            setFoodMenu(Object.values(data));
-          }
-          // ❌ Unknown format
-          else {
-            setFoodMenu([]);
-          }
-        } else {
-          setFoodMenu([]);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching food menu:", err);
-        setFoodMenu([]);
-      } finally {
-        setMenuLoading(false);
-      }
-    };
-
-    if (hostelId) fetchFoodMenu();
-  }, [hostelId]);
-
+  // Fetch food menu
+   useEffect(() => {
+     const fetchFoodMenu = async () => {
+       try {
+         console.log("🔄 Fetching food menu for hostel:", hostelId);
+         
+         if (!hostelId) {
+           console.log("⚠️ No hostel ID available");
+           setFoodMenu([]);
+           setMenuLoading(false);
+           return;
+         }
+ 
+         // Try to fetch from API endpoints first
+         console.log("🌐 Trying to fetch food menu from API...");
+         
+         const endpoints = [
+           `/food_menu/${hostelId}`,
+           `/hostel/food_menu/${hostelId}`,
+           `/hostel/${hostelId}/food_menu`,
+           `/hostel/${hostelId}/menu`,
+           `/menu/${hostelId}`
+         ];
+         
+         let foodData = null;
+         let found = false;
+         
+         for (const endpoint of endpoints) {
+           try {
+             console.log(`🔍 Trying endpoint: ${endpoint}`);
+             const res = await api.get(endpoint);
+             console.log(`📡 Response from ${endpoint}:`, res.data);
+             
+             if (res.data.success || res.data.ok || res.data.data || res.data.menu) {
+               foodData = res.data.data || res.data.menu || res.data.food_menu || res.data;
+               console.log("✅ Food data found from API:", foodData);
+               found = true;
+               break;
+             }
+           } catch (err) {
+             console.log(`❌ Endpoint ${endpoint} failed:`, err.message);
+           }
+         }
+         
+         // If no API data found, check if it's in hostelData (which might be fetched later)
+         if (!found && hostelData?.food_menu) {
+           console.log("📦 Food menu found in hostel data:", hostelData.food_menu);
+           foodData = hostelData.food_menu;
+           found = true;
+         }
+         
+         if (found && foodData) {
+           processFoodData(foodData);
+         } else {
+           console.log("⚠️ No food menu data found");
+           setFoodMenu([]);
+         }
+         
+       } catch (err) {
+         console.error("❌ Error in fetchFoodMenu:", err);
+         console.error("Error response:", err.response?.data);
+         setFoodMenu([]);
+       } finally {
+         setMenuLoading(false);
+       }
+     };
+     
+     // Helper function to process food data
+     const processFoodData = (foodData) => {
+       console.log("🔧 Processing food data:", foodData);
+       
+       try {
+         let processedMenu = [];
+         
+         // Parse if it's a string
+         if (typeof foodData === 'string') {
+           try {
+             foodData = JSON.parse(foodData);
+             console.log("✅ Parsed food menu JSON:", foodData);
+           } catch (parseError) {
+             console.error("❌ Failed to parse food menu JSON:", parseError);
+             setFoodMenu([]);
+             return;
+           }
+         }
+         
+         // Case 1: Object with breakfast, lunch, dinner properties
+         if (foodData.breakfast || foodData.lunch || foodData.dinner) {
+           const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+           
+           processedMenu = days.map(day => ({
+             day: day.charAt(0).toUpperCase() + day.slice(1),
+             breakfast: foodData.breakfast?.[day] || foodData.breakfast?.[day.toUpperCase()] || foodData.breakfast || "-",
+             lunch: foodData.lunch?.[day] || foodData.lunch?.[day.toUpperCase()] || foodData.lunch || "-",
+             dinner: foodData.dinner?.[day] || foodData.dinner?.[day.toUpperCase()] || foodData.dinner || "-"
+           }));
+           
+           console.log("📅 Processed weekly menu:", processedMenu);
+         }
+         // Case 2: Array format
+         else if (Array.isArray(foodData)) {
+           processedMenu = foodData.map(item => ({
+             day: item.day || item.Day || "Day " + (item.id || ""),
+             breakfast: item.breakfast || item.Breakfast || "-",
+             lunch: item.lunch || item.Lunch || "-",
+             dinner: item.dinner || item.Dinner || "-"
+           }));
+           
+           console.log("📅 Processed array menu:", processedMenu);
+         }
+         // Case 3: Object with day keys
+         else if (typeof foodData === 'object' && foodData !== null) {
+           processedMenu = Object.entries(foodData).map(([day, menu]) => ({
+             day: day.charAt(0).toUpperCase() + day.slice(1),
+             breakfast: menu.breakfast || menu.Breakfast || "-",
+             lunch: menu.lunch || menu.Lunch || "-",
+             dinner: menu.dinner || menu.Dinner || "-"
+           }));
+           
+           console.log("📅 Processed object menu:", processedMenu);
+         }
+         else {
+           console.log("⚠️ Unknown food data format:", foodData);
+           processedMenu = [];
+         }
+         
+         setFoodMenu(processedMenu);
+         
+       } catch (error) {
+         console.error("❌ Error processing food data:", error);
+         setFoodMenu([]);
+       }
+     };
+     
+     // Only fetch when we have hostelId
+     if (hostelId) {
+       console.log("🚀 Starting food menu fetch...");
+       fetchFoodMenu();
+     }
+   }, [hostelId]);
   // ================= IMAGE CAROUSEL =================
   const images =
     hostelData?.images && hostelData.images.length > 0
@@ -488,6 +583,8 @@ const HostelPage = () => {
       <div className="hostel-main">
         {/* LEFT IMAGES */}
         <div className="hostel-images">
+                  <h4 className="black-text">Name : {hostelData.hostel_name}</h4>
+
           <div className="main-img">
             <button className="arrow-left" onClick={prevImage}>
               <FaChevronLeft />
@@ -526,6 +623,34 @@ const HostelPage = () => {
         <div className="hostel-details">
           <h2 className="black-text">{hostelData.hostel_name}</h2>
           <p className="black-text">{hostelData.address}</p>
+          <p className="black-text">
+            <b>Type of Living:</b> {hostelData.pg_type}'s PG
+          </p>
+
+         {/* Pricing */}
+<div className="sharing-wrapper">
+  {Object.entries(hostelData.sharing_data).map(([sharing, price], idx) => {
+    const label =
+      sharing === "single" ? "1" :
+      sharing === "double" ? "2" :
+      sharing === "triple" ? "3" :
+      sharing === "four" ? "4" :
+      sharing === "five" ? "5" :
+      sharing === "six" ? "6" :
+      sharing;
+
+    return (
+      <div key={idx} className="sharing-item">
+        <div className="sharing-circle">
+          <span className="sharing-count">{label}   
+          <FaUser className="sharing-icon" /></span>
+        </div>
+
+        <div className="sharing-price">₹{price}</div>
+      </div>
+    );
+  })}
+</div>
 
           <h3 className="black-text">Amenities</h3>
           <div className="furnished-icons">
@@ -608,40 +733,70 @@ const HostelPage = () => {
           </div>
         </div>
       </div>
+  
+     {/* Food Menu */}
+<div className="food-menu">
+  <h2 className="food-menu-title">Food Menu</h2>
 
-      {/* FOOD MENU SECTION */}
-      <div className="food-menu">
-        <h2 className="black-text">Food Menu</h2>
+  {menuLoading ? (
+    <div className="loading-food">Loading food menu...</div>
+  ) : foodMenu.length > 0 ? (
+    <div className="food-menu-grid">
 
-        {menuLoading ? (
-          <div className="loading-food">Loading food menu...</div>
-        ) : foodMenu.length > 0 ? (
-          <table className="food-table">
-            <thead>
-              <tr>
-                <th>DAY</th>
-                <th>BREAKFAST</th>
-                <th>LUNCH</th>
-                <th>DINNER</th>
-              </tr>
-            </thead>
-            <tbody>
-              {normalizedMenu.map((day, idx) => (
-                <tr key={idx}>
-               <td>{day.day}</td>
-            <td>{day.breakfast}</td>
-            <td>{day.lunch}</td>
-            <td>{day.dinner}</td>
-             </tr>
-                 ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="no-food-menu">
-            <p>🍽️ No food menu available</p>
+      {/* Days Column */}
+      <div className="food-col days-col">
+        <div className="food-col-header">Days</div>
+        {foodMenu.map((item, idx) => (
+          <div key={idx} className="food-cell day-cell">
+            {item.day.toUpperCase()}
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Breakfast Column */}
+      <div className="food-col breakfast-col">
+        <div className="food-col-header breakfast-header">
+          Breakfast (07:30 - 10:00)
+        </div>
+        {foodMenu.map((item, idx) => (
+          <div key={idx} className="food-cell">
+            {item.breakfast || "-"}
+          </div>
+        ))}
+      </div>
+
+      {/* Lunch Column */}
+      <div className="food-col lunch-col">
+        <div className="food-col-header lunch-header">
+          Lunch (12:30 - 02:00)
+        </div>
+        {foodMenu.map((item, idx) => (
+          <div key={idx} className="food-cell">
+            {item.lunch || "-"}
+          </div>
+        ))}
+      </div>
+
+      {/* Dinner Column */}
+      <div className="food-col dinner-col">
+        <div className="food-col-header dinner-header">
+          Dinner (07:30 - 10:00)
+        </div>
+        {foodMenu.map((item, idx) => (
+          <div key={idx} className="food-cell">
+            {item.dinner || "-"}
+          </div>
+        ))}
+      </div>
+
+    </div>
+  ) : (
+    <div className="no-food-menu">
+      🍽️ No food menu available
+    </div>
+  )}
+</div>
+
 
       {/* BOOK NOW BUTTON */}
       <div className="book-now">
